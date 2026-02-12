@@ -24,14 +24,14 @@ public final class SaveLevelScreen extends LoadLevelScreen {
       for(int var2 = 0; var2 < 5; ++var2) {
          ((Button)this.buttons.get(var2)).text = var1[var2];
          ((Button)this.buttons.get(var2)).visible = true;
-         ((Button)this.buttons.get(var2)).active = this.minecraft.session.haspaid;
+         ((Button)this.buttons.get(var2)).active = this.minecraft.session.hasPaid;
       }
 
    }
 
    public final void render(int var1, int var2) {
       super.render(var1, var2);
-      if(!this.minecraft.session.haspaid) {
+      if(!this.minecraft.session.hasPaid) {
          drawFadingBox(this.width / 2 - 80, 72, this.width / 2 + 80, 120, -536870912, -536870912);
          drawCenteredString(this.fontRenderer, "Premium only!", this.width / 2, 80, 16748688);
          drawCenteredString(this.fontRenderer, "Purchase the game to be able", this.width / 2, 96, 14712960);

@@ -35,15 +35,7 @@ public class MinecraftApplet extends Applet
 
 		if(getParameter("username") != null && getParameter("sessionid") != null)
 		{
-			minecraft.session = new SessionData(getParameter("username"), getParameter("sessionid"));
-
-			if(getParameter("mppass") != null)
-			{
-				minecraft.session.mppass = getParameter("mppass");
-			}
-
-			// TODO: Not tested.
-			minecraft.session.haspaid = getParameter("haspaid").equalsIgnoreCase("true");
+			minecraft.session = new SessionData(getParameter("username"), getParameter("sessionid"), getParameter("mppass"), getParameter("haspaid"));
 		}
 
 		if(getParameter("loadmap_user") != null && getParameter("loadmap_id") != null)

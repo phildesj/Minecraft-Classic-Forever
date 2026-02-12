@@ -41,7 +41,7 @@ public class Inventory implements Serializable {
       if((var3 = this.getSlot(var1)) >= 0) {
          this.selected = var3;
       } else {
-         if(var2 && var1 > 0 && SessionData.allowedBlocks.contains(Block.blocks[var1])) {
+         if(var2 && var1 > 0 && SessionData.ALLOWED_BLOCKS.contains(Block.blocks[var1])) {
             this.replaceSlot(Block.blocks[var1]);
          }
 
@@ -69,7 +69,7 @@ public class Inventory implements Serializable {
 
    public void replaceSlot(int var1) {
       if(var1 >= 0) {
-         this.replaceSlot((Block)SessionData.allowedBlocks.get(var1));
+         this.replaceSlot((Block)SessionData.ALLOWED_BLOCKS.get(var1));
       }
 
    }

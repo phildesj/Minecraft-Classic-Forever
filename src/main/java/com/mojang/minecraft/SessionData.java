@@ -16,16 +16,16 @@ public final class SessionData {
 	public static final List<Block> ALLOWED_BLOCKS;
 
 	// Player username for the session
-	private final String username;
+	public final String username;
 
 	// Session identifier for authentication
-	private final String sessionId;
+	public final String sessionId;
 
 	// Multiplayer password for server authentication
-	private final String mppass;
+	public final String mppass;
 
 	// Flag indicating whether the player account has been paid for
-	private final boolean hasPaid;
+	public final boolean hasPaid;
 
 	/**
 	 * Constructs a SessionData object with the provided username and session ID.
@@ -34,11 +34,12 @@ public final class SessionData {
 	 * @param username the player's username
 	 * @param sessionId the session identifier for authentication
 	 */
-	public SessionData(String username, String sessionId) {
+	public SessionData(String username, String sessionId, String mppass, String hasPaid) {
 		this.username = username;
 		this.sessionId = sessionId;
-		this.mppass = "";
-		this.hasPaid = false;
+		this.mppass = mppass != null ? mppass :"";
+		//not tested for the hasPaid
+		this.hasPaid = hasPaid != null && hasPaid.equalsIgnoreCase("true");
 	}
 
 	/**
