@@ -505,7 +505,7 @@ public final class Minecraft implements Runnable {
                            var66.minecraft.selected = var66.minecraft.level.clip(var31, var71);
                            var74 = var36;
                            if(var66.minecraft.selected != null) {
-                              var74 = var66.minecraft.selected.vec.distance(var66.getPlayerVector(var65));
+                              var74 = var66.minecraft.selected.getVec().distance(var66.getPlayerVector(var65));
                            }
 
                            var31 = var66.getPlayerVector(var65);
@@ -525,7 +525,7 @@ public final class Minecraft implements Runnable {
                               if((var88 = (Entity)var37.get(var81)).isPickable()) {
                                  var74 = 0.1F;
                                  MovingObjectPosition var78;
-                                 if((var78 = var88.bb.grow(var74, var74, var74).clip(var31, var71)) != null && ((var74 = var31.distance(var78.vec)) < var35 || var35 == 0.0F)) {
+                                 if((var78 = var88.bb.grow(var74, var74, var74).clip(var31, var71)) != null && ((var74 = var31.distance(var78.getVec())) < var35 || var35 == 0.0F)) {
                                     var27.entity = var88;
                                     var35 = var74;
                                  }
@@ -832,15 +832,15 @@ public final class Minecraft implements Runnable {
                                     GL11.glBindTexture(3553, var108);
                                     GL11.glColor4f(1.0F, 1.0F, 1.0F, 0.5F);
                                     GL11.glPushMatrix();
-                                    Block var10000 = (var114 = var89.level.getTile(var102.x, var102.y, var102.z)) > 0?Block.blocks[var114]:null;
+                                    Block var10000 = (var114 = var89.level.getTile(var102.getX(), var102.getY(), var102.getZ())) > 0?Block.blocks[var114]:null;
                                     var73 = var10000;
                                     var74 = (var10000.x1 + var73.x2) / 2.0F;
                                     var33 = (var73.y1 + var73.y2) / 2.0F;
                                     var34 = (var73.z1 + var73.z2) / 2.0F;
-                                    GL11.glTranslatef((float)var102.x + var74, (float)var102.y + var33, (float)var102.z + var34);
+                                    GL11.glTranslatef((float) var102.getX() + var74, (float) var102.getY() + var33, (float) var102.getZ() + var34);
                                     var35 = 1.01F;
                                     GL11.glScalef(1.01F, var35, var35);
-                                    GL11.glTranslatef(-((float)var102.x + var74), -((float)var102.y + var33), -((float)var102.z + var34));
+                                    GL11.glTranslatef(-((float) var102.getX() + var74), -((float) var102.getY() + var33), -((float) var102.getZ() + var34));
                                     var113.begin();
                                     var113.noColor();
                                     GL11.glDepthMask(false);
@@ -849,7 +849,7 @@ public final class Minecraft implements Runnable {
                                     }
 
                                     for(var86 = 0; var86 < 6; ++var86) {
-                                       var73.renderSide(var113, var102.x, var102.y, var102.z, var86, 240 + (int)(var101.cracks * 10.0F));
+                                       var73.renderSide(var113, var102.getX(), var102.getY(), var102.getZ(), var86, 240 + (int)(var101.cracks * 10.0F));
                                     }
 
                                     var113.end();
@@ -870,8 +870,8 @@ public final class Minecraft implements Runnable {
                                  GL11.glDisable(3553);
                                  GL11.glDepthMask(false);
                                  var29 = 0.002F;
-                                 if((var104 = var89.level.getTile(var102.x, var102.y, var102.z)) > 0) {
-									 AABB var111 = Block.blocks[var104].getSelectionBox(var102.x, var102.y, var102.z).grow(var29, var29, var29);
+                                 if((var104 = var89.level.getTile(var102.getX(), var102.getY(), var102.getZ())) > 0) {
+									 AABB var111 = Block.blocks[var104].getSelectionBox(var102.getX(), var102.getY(), var102.getZ()).grow(var29, var29, var29);
 									 GL11.glBegin(3);
 									 GL11.glVertex3f(var111.x0, var111.y0, var111.z0);
 									 GL11.glVertex3f(var111.x1, var111.y0, var111.z0);
@@ -1156,37 +1156,37 @@ public final class Minecraft implements Runnable {
             }
 
          } else {
-            if(this.selected.entityPos == 1) {
+            if(this.selected.getEntityPos() == 1) {
                if(var1 == 0) {
-                  this.selected.entity.hurt(this.player, 4);
+                  this.selected.getEntity().hurt(this.player, 4);
                   return;
                }
-            } else if(this.selected.entityPos == 0) {
-               var3 = this.selected.x;
-               int var4 = this.selected.y;
-               int var5 = this.selected.z;
+            } else if(this.selected.getEntityPos() == 0) {
+               var3 = this.selected.getX();
+               int var4 = this.selected.getY();
+               int var5 = this.selected.getZ();
                if(var1 != 0) {
-                  if(this.selected.face == 0) {
+                  if(this.selected.getFace() == 0) {
                      --var4;
                   }
 
-                  if(this.selected.face == 1) {
+                  if(this.selected.getFace() == 1) {
                      ++var4;
                   }
 
-                  if(this.selected.face == 2) {
+                  if(this.selected.getFace() == 2) {
                      --var5;
                   }
 
-                  if(this.selected.face == 3) {
+                  if(this.selected.getFace() == 3) {
                      ++var5;
                   }
 
-                  if(this.selected.face == 4) {
+                  if(this.selected.getFace() == 4) {
                      --var3;
                   }
 
-                  if(this.selected.face == 5) {
+                  if(this.selected.getFace() == 5) {
                      ++var3;
                   }
                }
@@ -1528,7 +1528,7 @@ public final class Minecraft implements Runnable {
                   }
 
                   if(Mouse.getEventButton() == 2 && Mouse.getEventButtonState() && this.selected != null) {
-                     if((var16 = this.level.getTile(this.selected.x, this.selected.y, this.selected.z)) == Block.GRASS.id) {
+                     if((var16 = this.level.getTile(this.selected.getX(), this.selected.getY(), this.selected.getZ())) == Block.GRASS.id) {
                         var16 = Block.DIRT.id;
                      }
 
@@ -1624,11 +1624,11 @@ public final class Minecraft implements Runnable {
          boolean var26 = this.currentScreen == null && Mouse.isButtonDown(0) && this.hasMouse;
          boolean var35 = false;
          if(!this.gamemode.instantBreak && this.blockHitTime <= 0) {
-            if(var26 && this.selected != null && this.selected.entityPos == 0) {
-               var4 = this.selected.x;
-               var40 = this.selected.y;
-               var46 = this.selected.z;
-               this.gamemode.hitBlock(var4, var40, var46, this.selected.face);
+            if(var26 && this.selected != null && this.selected.getEntityPos() == 0) {
+               var4 = this.selected.getX();
+               var40 = this.selected.getY();
+               var46 = this.selected.getZ();
+               this.gamemode.hitBlock(var4, var40, var46, this.selected.getFace());
             } else {
                this.gamemode.resetHits();
             }
