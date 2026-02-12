@@ -15,7 +15,7 @@ public class SleepForeverThread extends Thread {
 	 * Constructs a SleepForeverThread as a daemon thread and starts execution.
 	 * This thread will run indefinitely in the background without blocking the application.
 	 */
-	public SleepForeverThread() {
+	public SleepForeverThread(Minecraft minecraft) {
 		setDaemon(true);
 		start();
 	}

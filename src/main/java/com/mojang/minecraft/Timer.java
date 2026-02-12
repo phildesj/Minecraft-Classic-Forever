@@ -28,6 +28,14 @@ public class Timer {
 	// Accumulated delta time for tick calculations
 	public float elapsedDelta = DEFAULT_ELAPSED_DELTA;
 
+	public long lastSysClock;
+
+	public long lastHRClock;
+
+	public double adjustment = 1.0D;
+
+	public double lastHR;
+
 	/**
 	 * Constructs a Timer with a specified target ticks per second.
 	 * Initializes the timer for frame synchronization and tick accumulation.
@@ -36,5 +44,7 @@ public class Timer {
 	 */
 	public Timer(float tps) {
 		this.tps = tps;
+		lastSysClock = System.currentTimeMillis();
+		lastHRClock = System.nanoTime() / 1000000L;
 	}
 }
