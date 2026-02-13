@@ -140,10 +140,13 @@ public class LoadLevelScreen extends GuiScreen implements Runnable {
 		Level level = mc.levelIo.load(file);
 
 		if (level != null) {
+			// Ensure transient fields are initialized
+			level.initTransient();
+			// Set the loaded level as the current level
 			mc.setLevel(level);
+			// Return to the parent screen
+			this.minecraft.setCurrentScreen(this.parent);
 		}
-
-		this.minecraft.setCurrentScreen(this.parent);
 	}
 
 	/**

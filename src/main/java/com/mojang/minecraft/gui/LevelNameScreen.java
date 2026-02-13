@@ -5,6 +5,8 @@ import com.mojang.minecraft.gui.Button;
 import com.mojang.minecraft.gui.GuiScreen;
 import org.lwjgl.input.Keyboard;
 
+import java.io.File;
+
 public final class LevelNameScreen extends GuiScreen {
 
    private GuiScreen parent;
@@ -48,7 +50,13 @@ public final class LevelNameScreen extends GuiScreen {
             String var2 = this.name.trim();
             int var3 = var10001;
             Minecraft var4 = var10000;
-            var10000.levelIo.saveOnline(var4.level, var4.host, var4.session.username, var4.session.sessionId, var2, var3);
+
+            //TODO : phil desj, je force la sauvegarde locale
+            if(false) {
+               var10000.levelIo.saveOnline(var4.level, var4.host, var4.session.username, var4.session.sessionId, var2, var3);
+            } else {
+               var10000.levelIo.save(var4.level, new File(var2+".mine"));
+            }
             this.minecraft.setCurrentScreen((GuiScreen)null);
             this.minecraft.grabMouse();
          }

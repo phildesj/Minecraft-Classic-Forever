@@ -11,7 +11,7 @@ public final class SPFrame extends JFrame
 	public SPFrame()
 	{
 		setTitle("MinecraftMania - Single Player");
-		setSize(854, 480);
+		setSize(1600, 900);
 		setResizable(false);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setLayout(new BorderLayout());
@@ -25,20 +25,26 @@ public final class SPFrame extends JFrame
 		}
 	}
 
-	public void startMinecraft()
-	{
-		MCApplet applet = new MCApplet();
-		MinecraftApplet$1 canvas = new MinecraftApplet$1(applet);
+	public void startMinecraft(boolean serverMode) {
 
-		Minecraft minecraft = new Minecraft(canvas, applet, getWidth(), getHeight(), false);
+		if(!serverMode){
+			MCApplet applet = new MCApplet();
+			MinecraftApplet$1 canvas = new MinecraftApplet$1(applet);
 
-		canvas.setSize(getWidth(), getHeight());
+			Minecraft minecraft = new Minecraft(canvas, applet, getWidth(), getHeight(), false);
 
-		add(canvas, "Center");
+			canvas.setSize(getWidth(), getHeight());
 
-		pack();
+			add(canvas, "Center");
 
-		new Thread(minecraft).start();
+			pack();
+
+			new Thread(minecraft).start();
+		} else {
+			//TODO : run the game headless
+		}
+
+
 	}
 
 	public void finish()

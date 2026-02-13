@@ -8,15 +8,24 @@ import javax.swing.*;
  * Date: 9/23/12
  * Time: 4:04 PM
  */
-public class Start
-{
-	public static void main(String[] args)
-	{
-		new Start();
+public class Start {
+	private static boolean serverMode = false;
+
+	public static void main(String[] args) {
+		new Start(args);
 	}
 
-	public Start()
-	{
+	void parseArgs(String[] args){
+		for (String arg : args) {
+			if (arg.equals("-server")) {
+				serverMode = true;
+			}
+		}
+	}
+
+	public Start(String[] args) {
+
+		parseArgs(args);
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
@@ -27,7 +36,7 @@ public class Start
 
 		spFrame.setVisible(true);
 
-		spFrame.startMinecraft();
+		spFrame.startMinecraft(serverMode);
 		spFrame.finish();
 	}
 }

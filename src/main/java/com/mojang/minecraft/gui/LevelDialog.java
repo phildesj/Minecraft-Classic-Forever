@@ -3,6 +3,7 @@ package com.mojang.minecraft.gui;
 import com.mojang.minecraft.gui.LoadLevelScreen;
 import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import java.io.File;
 
 final class LevelDialog extends Thread {
 
@@ -37,7 +38,8 @@ final class LevelDialog extends Thread {
          }
 
          if(var7 == 0) {
-            (var2 = this.screen).selectedFile = this.screen.chooser.getSelectedFile();
+            var2.selectedFile = this.screen.chooser.getSelectedFile();
+//            (var2 = this.screen).selectedFile = this.screen.chooser.getSelectedFile();
          }
       } finally {
          boolean var6 = false;

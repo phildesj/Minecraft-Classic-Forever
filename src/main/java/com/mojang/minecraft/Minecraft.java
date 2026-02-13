@@ -57,7 +57,7 @@ import java.util.List;
 public final class Minecraft implements Runnable {
 
    public GameMode gamemode = new SurvivalGameMode(this);
-   private boolean fullscreen = false;
+   private boolean fullscreen = true;
    public int width;
    public int height;
    private Timer timer = new Timer(20.0F);
@@ -100,7 +100,7 @@ public final class Minecraft implements Runnable {
    public boolean raining;
 
 
-   public Minecraft(Canvas var1, MinecraftApplet var2, int var3, int var4, boolean var5) {
+   public Minecraft(Canvas canvas, MinecraftApplet var2, int width, int height, boolean fullscreen) {
       this.levelIo = new LevelIO(this.progressBar);
       this.sound = new SoundManager();
       this.ticks = 0;
@@ -117,6 +117,7 @@ public final class Minecraft implements Runnable {
       this.hasMouse = false;
       this.lastClick = 0;
       this.raining = false;
+      this.session = new SessionData("phil","234735475","","true");
 
       try {
          UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -126,11 +127,11 @@ public final class Minecraft implements Runnable {
 
       this.applet = var2;
       new SleepForeverThread(this);
-      this.canvas = var1;
-      this.width = var3;
-      this.height = var4;
-      this.fullscreen = var5;
-      if(var1 != null) {
+      this.canvas = canvas;
+      this.width = width;
+      this.height = height;
+      this.fullscreen = fullscreen;
+      if(canvas != null) {
          try {
             this.robot = new Robot();
             return;
@@ -311,6 +312,8 @@ public final class Minecraft implements Runnable {
          Item.initModels();
          Mob.modelCache = new ModelManager();
          GL11.glViewport(0, 0, this.width, this.height);
+
+         //
          if(this.server != null && this.session != null) {
             Level var85;
             (var85 = new Level()).setData(8, 8, 8, new byte[512]);
@@ -333,6 +336,7 @@ public final class Minecraft implements Runnable {
 
             if(this.level == null) {
                this.generateLevel(1);
+               //this.levelIo.save(this.level, (OutputStream)(new FileOutputStream(new File("level.dat"))));
             }
          }
 

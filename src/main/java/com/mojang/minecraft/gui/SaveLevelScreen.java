@@ -39,6 +39,7 @@ public final class SaveLevelScreen extends LoadLevelScreen {
       }
    }
 
+   @Override
    protected final void openLevel(File var1) {
       if(!var1.getName().endsWith(".mine")) {
          var1 = new File(var1.getParentFile(), var1.getName() + ".mine");
@@ -50,7 +51,16 @@ public final class SaveLevelScreen extends LoadLevelScreen {
       this.minecraft.setCurrentScreen(this.parent);
    }
 
+   @Override
    protected final void openLevel(int var1) {
       this.minecraft.setCurrentScreen(new LevelNameScreen(this, ((Button)this.buttons.get(var1)).text, var1));
+   }
+
+   @Override
+   protected void onButtonClick(Button button) {
+	   super.onButtonClick(button);
+	   if(button.id == 5) {
+		   this.minecraft.setCurrentScreen(new LevelNameScreen(this, "New level", 5));
+	   }
    }
 }

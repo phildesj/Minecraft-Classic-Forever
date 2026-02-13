@@ -9,5 +9,8 @@
         <module name="minecraft-classic" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="Minecraft-Classic-Forever-Server" target="1.8" />
+    </bytecodeTargetLevel>
   </component>
 </project>
