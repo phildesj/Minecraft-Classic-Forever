@@ -1,57 +1,74 @@
 package com.mojang.minecraft.gui;
 
 import com.mojang.minecraft.GameSettings;
-import com.mojang.minecraft.gui.Button;
-import com.mojang.minecraft.gui.GuiScreen;
-import com.mojang.minecraft.gui.OptionButton;
 
+/**
+ * A screen for configuring game controls and key bindings.
+ */
 public final class ControlsScreen extends GuiScreen {
 
-   private GuiScreen parent;
-   private String title = "Controls";
-   private GameSettings settings;
-   private int selected = -1;
+	/** The parent screen to return to. */
+	private final GuiScreen parent;
+	/** The title of this screen. */
+	private final String title = "Controls";
+	/** Reference to the game settings. */
+	private final GameSettings settings;
+	/** The index of the binding currently being edited, or -1. */
+	private int selectedBinding = -1;
 
+	/**
+	 * Creates a new controls screen.
+	 *
+	 * @param parent   The parent screen.
+	 * @param settings The game settings to modify.
+	 */
+	public ControlsScreen(GuiScreen parent, GameSettings settings) {
+		this.parent = parent;
+		this.settings = settings;
+	}
 
-   public ControlsScreen(GuiScreen var1, GameSettings var2) {
-      this.parent = var1;
-      this.settings = var2;
-   }
+	@Override
+	public void onOpen() {
+		for (int i = 0; i < this.settings.bindings.length; ++i) {
+			this.buttons.add(new OptionButton(i, this.width / 2 - 155 + i % 2 * 160, this.height / 6 + 24 * (i >> 1), this.settings.getBinding(i)));
+		}
 
-   public final void onOpen() {
-      for(int var1 = 0; var1 < this.settings.bindings.length; ++var1) {
-         this.buttons.add(new OptionButton(var1, this.width / 2 - 155 + var1 % 2 * 160, this.height / 6 + 24 * (var1 >> 1), this.settings.getBinding(var1)));
-      }
+		this.buttons.add(new Button(200, this.width / 2 - 100, this.height / 6 + 168, "Done"));
+	}
 
-      this.buttons.add(new Button(200, this.width / 2 - 100, this.height / 6 + 168, "Done"));
-   }
+	@Override
+	protected void onButtonClick(Button button) {
+		// Reset text for all buttons
+		for (int i = 0; i < this.settings.bindings.length; ++i) {
+			((Button) this.buttons.get(i)).text = this.settings.getBinding(i);
+		}
 
-   protected final void onButtonClick(Button var1) {
-      for(int var2 = 0; var2 < this.settings.bindings.length; ++var2) {
-         ((Button)this.buttons.get(var2)).text = this.settings.getBinding(var2);
-      }
+		if (button.id == 200) {
+			this.minecraft.setCurrentScreen(this.parent);
+		} else {
+			this.selectedBinding = button.id;
+			button.text = "> " + this.settings.getBinding(button.id) + " <";
+		}
+	}
 
-      if(var1.id == 200) {
-         this.minecraft.setCurrentScreen(this.parent);
-      } else {
-         this.selected = var1.id;
-         var1.text = "> " + this.settings.getBinding(var1.id) + " <";
-      }
-   }
+	@Override
+	protected void onKeyPress(char typedChar, int keyCode) {
+		if (this.selectedBinding >= 0) {
+			this.settings.setBinding(this.selectedBinding, keyCode);
+			((Button) this.buttons.get(this.selectedBinding)).text = this.settings.getBinding(this.selectedBinding);
+			this.selectedBinding = -1;
+		} else {
+			super.onKeyPress(typedChar, keyCode);
+		}
+	}
 
-   protected final void onKeyPress(char var1, int var2) {
-      if(this.selected >= 0) {
-         this.settings.setBinding(this.selected, var2);
-         ((Button)this.buttons.get(this.selected)).text = this.settings.getBinding(this.selected);
-         this.selected = -1;
-      } else {
-         super.onKeyPress(var1, var2);
-      }
-   }
-
-   public final void render(int var1, int var2) {
-      drawFadingBox(0, 0, this.width, this.height, 1610941696, -1607454624);
-      drawCenteredString(this.fontRenderer, this.title, this.width / 2, 20, 16777215);
-      super.render(var1, var2);
-   }
+	@Override
+	public void render(int mouseX, int mouseY) {
+		drawFadingBox(0, 0, this.width, this.height, 1610941696, -1607454624);
+		drawCenteredString(this.fontRenderer, this.title, this.width / 2, 20, 16777215);
+		super.render(mouseX, mouseY);
+	}
 }
+
+
+
