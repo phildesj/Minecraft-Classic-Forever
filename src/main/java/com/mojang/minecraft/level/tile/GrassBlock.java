@@ -18,9 +18,9 @@ public final class GrassBlock extends Block {
 	 * Uses hardcoded block ID 2 and texture ID 3 for the grass block.
 	 * Enables physics for this block type.
 	 *
-	 * @param var1 the block ID parameter (unused, fixed to 2)
+	 * @param blockId the block ID parameter (unused, fixed to 2)
 	 */
-	protected GrassBlock(int var1) {
+	protected GrassBlock(int blockId) {
 		super(2);
 		this.textureId = 3;
 		this.setPhysics(true);
@@ -32,12 +32,12 @@ public final class GrassBlock extends Block {
 	 * Bottom face (index 0) uses dirt texture (2).
 	 * Side faces use grass with dirt texture (3).
 	 *
-	 * @param texture the face index (0=bottom, 1=top, 2-5=sides)
+	 * @param faceIndex the face index (0=bottom, 1=top, 2-5=sides)
 	 * @return the texture ID for the specified face
 	 */
 	@Override
-	protected final int getTextureId(int texture) {
-		return texture == 1?0:(texture == 0?2:3);
+	protected final int getTextureId(int faceIndex) {
+		return faceIndex == 1?0:(faceIndex == 0?2:3);
 	}
 
 	/**
@@ -61,12 +61,12 @@ public final class GrassBlock extends Block {
 				level.setTile(x, y, z, Block.DIRT.id);
 			} else {
 				// Grass spreads to nearby dirt blocks in light
-				for(int var9 = 0; var9 < 4; ++var9) {
-					int var6 = x + rand.nextInt(3) - 1;
-					int var7 = y + rand.nextInt(5) - 3;
-					int var8 = z + rand.nextInt(3) - 1;
-					if(level.getTile(var6, var7, var8) == Block.DIRT.id && level.isLit(var6, var7, var8)) {
-						level.setTile(var6, var7, var8, Block.GRASS.id);
+				for(int spreadAttempt = 0; spreadAttempt < 4; ++spreadAttempt) {
+					int adjacentX = x + rand.nextInt(3) - 1;
+					int adjacentY = y + rand.nextInt(5) - 3;
+					int adjacentZ = z + rand.nextInt(3) - 1;
+					if(level.getTile(adjacentX, adjacentY, adjacentZ) == Block.DIRT.id && level.isLit(adjacentX, adjacentY, adjacentZ)) {
+						level.setTile(adjacentX, adjacentY, adjacentZ, Block.GRASS.id);
 					}
 				}
 
