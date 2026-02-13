@@ -8,151 +8,219 @@ import java.io.IOException;
 import javax.imageio.ImageIO;
 import org.lwjgl.opengl.GL11;
 
+/**
+ * Handles font loading and text rendering in the game.
+ */
 public final class FontRenderer {
 
-   private int[] widthmap = new int[256];
-   private int fontTexture = 0;
-   private GameSettings settings;
+	/** Map of character widths for all 256 possible byte values. */
+	private final int[] widthMap = new int[256];
+	/** The OpenGL texture ID for the font. */
+	private final int fontTexture;
+	/** Reference to the game settings for anaglyph 3D support. */
+	private final GameSettings settings;
 
+	/**
+	 * Initializes the FontRenderer, loading the font texture and calculating character widths.
+	 *
+	 * @param settings       The game settings.
+	 * @param fontName       The resource path to the font texture.
+	 * @param textureManager The texture manager to load the font texture.
+	 */
+	public FontRenderer(GameSettings settings, String fontName, TextureManager textureManager) {
+		this.settings = settings;
 
-   public FontRenderer(GameSettings var1, String var2, TextureManager var3) {
-      this.settings = var1;
+		BufferedImage fontImage;
+		try (java.io.InputStream fontStream = TextureManager.class.getResourceAsStream(fontName)) {
+			if (fontStream == null) {
+				throw new IOException("Font resource not found: " + fontName);
+			}
+			fontImage = ImageIO.read(fontStream);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 
-      BufferedImage var14;
-      try {
-         var14 = ImageIO.read(TextureManager.class.getResourceAsStream(var2));
-      } catch (IOException var13) {
-         throw new RuntimeException(var13);
-      }
+		int imgWidth = fontImage.getWidth();
+		int imgHeight = fontImage.getHeight();
+		int[] pixels = new int[imgWidth * imgHeight];
+		fontImage.getRGB(0, 0, imgWidth, imgHeight, pixels, 0, imgWidth);
 
-      int var4 = var14.getWidth();
-      int var5 = var14.getHeight();
-      int[] var6 = new int[var4 * var5];
-      var14.getRGB(0, 0, var4, var5, var6, 0, var4);
+		// Calculate the width of each character by scanning the bitmap
+		for (int i = 0; i < 128; ++i) {
+			int column = i % 16;
+			int row = i / 16;
+			int charWidth = 0;
 
-      for(int var15 = 0; var15 < 128; ++var15) {
-         var5 = var15 % 16;
-         int var7 = var15 / 16;
-         int var8 = 0;
+			for (boolean foundPixel = false; charWidth < 8 && !foundPixel; ++charWidth) {
+				int x = (column << 3) + charWidth;
+				foundPixel = true;
 
-         for(boolean var9 = false; var8 < 8 && !var9; ++var8) {
-            int var10 = (var5 << 3) + var8;
-            var9 = true;
+				for (int y = 0; y < 8; ++y) {
+					int pixelIndex = ((row << 3) + y) * imgWidth;
+					// Check if pixel is not transparent
+					if ((pixels[x + pixelIndex] & 255) > 128) {
+						foundPixel = false;
+						break;
+					}
+				}
+			}
 
-            for(int var11 = 0; var11 < 8 && var9; ++var11) {
-               int var12 = ((var7 << 3) + var11) * var4;
-               if((var6[var10 + var12] & 255) > 128) {
-                  var9 = false;
-               }
-            }
-         }
+			if (i == 32) { // Space character
+				charWidth = 4;
+			}
 
-         if(var15 == 32) {
-            var8 = 4;
-         }
+			this.widthMap[i] = charWidth;
+		}
 
-         this.widthmap[var15] = var8;
-      }
+		this.fontTexture = textureManager.load(fontName);
+	}
 
-      this.fontTexture = var3.load(var2);
-   }
+	/**
+	 * Renders a string with a shadow.
+	 *
+	 * @param text  The string to render.
+	 * @param x     The X coordinate.
+	 * @param y     The Y coordinate.
+	 * @param color The color of the text.
+	 */
+	public void render(String text, int x, int y, int color) {
+		this.render(text, x + 1, y + 1, color, true);
+		this.renderNoShadow(text, x, y, color);
+	}
 
-   public final void render(String var1, int var2, int var3, int var4) {
-      this.render(var1, var2 + 1, var3 + 1, var4, true);
-      this.renderNoShadow(var1, var2, var3, var4);
-   }
+	/**
+	 * Renders a string without a shadow.
+	 *
+	 * @param text  The string to render.
+	 * @param x     The X coordinate.
+	 * @param y     The Y coordinate.
+	 * @param color The color of the text.
+	 */
+	public void renderNoShadow(String text, int x, int y, int color) {
+		this.render(text, x, y, color, false);
+	}
 
-   public final void renderNoShadow(String var1, int var2, int var3, int var4) {
-      this.render(var1, var2, var3, var4, false);
-   }
+	/**
+	 * Internal rendering method that handles both shadow and normal text.
+	 *
+	 * @param text   The string to render.
+	 * @param x      The X coordinate.
+	 * @param y      The Y coordinate.
+	 * @param color  The color of the text.
+	 * @param shadow Whether to render the text as a shadow (darker).
+	 */
+	private void render(String text, int x, int y, int color, boolean shadow) {
+		if (text == null) {
+			return;
+		}
 
-   private void render(String var1, int var2, int var3, int var4, boolean var5) {
-      if(var1 != null) {
-         char[] var12 = var1.toCharArray();
-         if(var5) {
-            var4 = (var4 & 16579836) >> 2;
-         }
+		char[] chars = text.toCharArray();
+		if (shadow) {
+			// Darken the color for shadow (mask out significant bits and shift)
+			color = (color & 16579836) >> 2;
+		}
 
-         GL11.glBindTexture(3553, this.fontTexture);
-         ShapeRenderer var6 = ShapeRenderer.instance;
-         ShapeRenderer.instance.begin();
-         var6.color(var4);
-         int var7 = 0;
+		GL11.glBindTexture(GL11.GL_TEXTURE_2D, this.fontTexture);
+		ShapeRenderer shapeRenderer = ShapeRenderer.instance;
+		shapeRenderer.begin();
+		shapeRenderer.color(color);
 
-         for(int var8 = 0; var8 < var12.length; ++var8) {
-            int var9;
-            if(var12[var8] == 38 && var12.length > var8 + 1) {
-               if((var4 = "0123456789abcdef".indexOf(var12[var8 + 1])) < 0) {
-                  var4 = 15;
-               }
+		int currentX = 0;
+		for (int i = 0; i < chars.length; ++i) {
+			// Handle color codes starting with '&'
+			if (chars[i] == '&' && chars.length > i + 1) {
+				int colorIndex = "0123456789abcdef".indexOf(chars[i + 1]);
+				if (colorIndex < 0) {
+					colorIndex = 15; // Reset to white if unknown
+				}
 
-               var9 = (var4 & 8) << 3;
-               int var10 = (var4 & 1) * 191 + var9;
-               int var11 = ((var4 & 2) >> 1) * 191 + var9;
-               var4 = ((var4 & 4) >> 2) * 191 + var9;
-               if(this.settings.anaglyph) {
-                  var9 = (var4 * 30 + var11 * 59 + var10 * 11) / 100;
-                  var11 = (var4 * 30 + var11 * 70) / 100;
-                  var10 = (var4 * 30 + var10 * 70) / 100;
-                  var4 = var9;
-                  var11 = var11;
-                  var10 = var10;
-               }
+				int br = (colorIndex & 8) << 3;
+				int r = (colorIndex & 1) * 191 + br;
+				int g = ((colorIndex & 2) >> 1) * 191 + br;
+				int b = ((colorIndex & 4) >> 2) * 191 + br;
 
-               var4 = var4 << 16 | var11 << 8 | var10;
-               var8 += 2;
-               if(var5) {
-                  var4 = (var4 & 16579836) >> 2;
-               }
+				if (this.settings.anaglyph) {
+					int avgR = (b * 30 + g * 59 + r * 11) / 100;
+					int avgG = (b * 30 + g * 70) / 100;
+					int avgB = (b * 30 + r * 70) / 100;
+					b = avgR;
+					g = avgG;
+					r = avgB;
+				}
 
-               var6.color(var4);
-            }
+				color = b << 16 | g << 8 | r;
+				i += 2;
 
-            var4 = var12[var8] % 16 << 3;
-            var9 = var12[var8] / 16 << 3;
-            float var13 = 7.99F;
-            var6.vertexUV((float)(var2 + var7), (float)var3 + var13, 0.0F, (float)var4 / 128.0F, ((float)var9 + var13) / 128.0F);
-            var6.vertexUV((float)(var2 + var7) + var13, (float)var3 + var13, 0.0F, ((float)var4 + var13) / 128.0F, ((float)var9 + var13) / 128.0F);
-            var6.vertexUV((float)(var2 + var7) + var13, (float)var3, 0.0F, ((float)var4 + var13) / 128.0F, (float)var9 / 128.0F);
-            var6.vertexUV((float)(var2 + var7), (float)var3, 0.0F, (float)var4 / 128.0F, (float)var9 / 128.0F);
-            var7 += this.widthmap[var12[var8]];
-         }
+				if (shadow) {
+					color = (color & 16579836) >> 2;
+				}
 
-         var6.end();
-      }
-   }
+				shapeRenderer.color(color);
+			}
 
-   public final int getWidth(String var1) {
-      if(var1 == null) {
-         return 0;
-      } else {
-         char[] var4 = var1.toCharArray();
-         int var2 = 0;
+			// Render the character as a quad
+			int u = chars[i] % 16 << 3;
+			int v = chars[i] / 16 << 3;
+			float size = 7.99F;
 
-         for(int var3 = 0; var3 < var4.length; ++var3) {
-            if(var4[var3] == 38) {
-               ++var3;
-            } else {
-               var2 += this.widthmap[var4[var3]];
-            }
-         }
+			shapeRenderer.vertexUV((float) (x + currentX), (float) y + size, 0.0F, (float) u / 128.0F, ((float) v + size) / 128.0F);
+			shapeRenderer.vertexUV((float) (x + currentX) + size, (float) y + size, 0.0F, ((float) u + size) / 128.0F, ((float) v + size) / 128.0F);
+			shapeRenderer.vertexUV((float) (x + currentX) + size, (float) y, 0.0F, ((float) u + size) / 128.0F, (float) v / 128.0F);
+			shapeRenderer.vertexUV((float) (x + currentX), (float) y, 0.0F, (float) u / 128.0F, (float) v / 128.0F);
 
-         return var2;
-      }
-   }
+			currentX += this.widthMap[chars[i]];
+		}
 
-   public static String stripColor(String var0) {
-      char[] var3 = var0.toCharArray();
-      String var1 = "";
+		shapeRenderer.end();
+	}
 
-      for(int var2 = 0; var2 < var3.length; ++var2) {
-         if(var3[var2] == 38) {
-            ++var2;
-         } else {
-            var1 = var1 + var3[var2];
-         }
-      }
+	/**
+	 * Calculates the rendered width of a string, taking into account character widths and ignoring color codes.
+	 *
+	 * @param text The string to measure.
+	 * @return The width in pixels.
+	 */
+	public int getWidth(String text) {
+		if (text == null) {
+			return 0;
+		}
 
-      return var1;
-   }
+		char[] chars = text.toCharArray();
+		int width = 0;
+
+		for (int i = 0; i < chars.length; ++i) {
+			if (chars[i] == '&') {
+				++i; // Skip color code character
+			} else {
+				width += this.widthMap[chars[i]];
+			}
+		}
+
+		return width;
+	}
+
+	/**
+	 * Removes all color codes (starting with '&') from a string.
+	 *
+	 * @param text The string to strip colors from.
+	 * @return The stripped string.
+	 */
+	public static String stripColor(String text) {
+		if (text == null) {
+			return null;
+		}
+
+		char[] chars = text.toCharArray();
+		StringBuilder builder = new StringBuilder();
+
+		for (int i = 0; i < chars.length; ++i) {
+			if (chars[i] == '&') {
+				++i; // Skip color code character
+			} else {
+				builder.append(chars[i]);
+			}
+		}
+
+		return builder.toString();
+	}
 }
