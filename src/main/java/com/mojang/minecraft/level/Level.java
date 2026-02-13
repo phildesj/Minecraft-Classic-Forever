@@ -397,8 +397,8 @@ public class Level implements Serializable {
    public int countInstanceOf(Class var1) {
       int var2 = 0;
 
-      for(int var3 = 0; var3 < this.blockMap.all.size(); ++var3) {
-         Entity var4 = (Entity)this.blockMap.all.get(var3);
+      for(int var3 = 0; var3 < this.blockMap.allEntities.size(); ++var3) {
+         Entity var4 = (Entity)this.blockMap.allEntities.get(var3);
          if(var1.isAssignableFrom(var4.getClass())) {
             ++var2;
          }
@@ -997,8 +997,8 @@ public class Level implements Serializable {
    }
 
    public Entity findSubclassOf(Class var1) {
-      for(int var2 = 0; var2 < this.blockMap.all.size(); ++var2) {
-         Entity var3 = (Entity)this.blockMap.all.get(var2);
+      for(int var2 = 0; var2 < this.blockMap.allEntities.size(); ++var2) {
+         Entity var3 = (Entity)this.blockMap.allEntities.get(var2);
          if(var1.isAssignableFrom(var3.getClass())) {
             return var3;
          }
