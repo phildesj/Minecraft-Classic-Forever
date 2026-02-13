@@ -111,25 +111,23 @@ public class LoadLevelScreen extends GuiScreen implements Runnable {
 	@Override
 	protected void onButtonClick(Button button) {
 		if (!this.frozen) {
-			if (button.active) {
-				// Load from online levels
-				if (this.loaded && button.id < 5) {
-					this.openLevel(button.id);
-				}
+			// Load from online levels
+			if (this.loaded && button.id < 5) {
+				this.openLevel(button.id);
+			}
 
-				// Load from local file (button id 5)
-				if (button.id == 5) {
-					this.frozen = true;
-					LevelDialog dialog = new LevelDialog(this);
-					dialog.setDaemon(true);
-					// Start the dialog thread to show the file chooser
-					dialog.start();
-				}
+			// Load from local file (button id 5)
+			if (button.id == 5) {
+				this.frozen = true;
+				LevelDialog dialog = new LevelDialog(this);
+				dialog.setDaemon(true);
+				// Start the dialog thread to show the file chooser
+				dialog.start();
+			}
 
-				// Cancel button (button id 6)
-				if (button.id == 6 || this.finished) {
-					this.minecraft.setCurrentScreen(this.parent);
-				}
+			// Cancel button (button id 6)
+			if (button.id == 6 || this.finished) {
+				this.minecraft.setCurrentScreen(this.parent);
 			}
 		}
 	}
