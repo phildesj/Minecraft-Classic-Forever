@@ -3,88 +3,164 @@ package com.mojang.minecraft.render.texture;
 import com.mojang.minecraft.level.tile.Block;
 import com.mojang.minecraft.render.texture.TextureFX;
 
+/**
+ * TextureWaterFX implements animated water texture effects for the Minecraft Classic Forever client.
+ * Uses a 16x16 pixel texture with wave propagation and ripple animations to create realistic water appearance.
+ * The animation algorithm applies wave equation simulation with wave smoothing and random ripple generation.
+ * Supports anaglyph 3D color processing for stereoscopic rendering.
+ */
 public final class TextureWaterFX extends TextureFX {
 
-   private float[] red = new float[256];
-   private float[] blue = new float[256];
-   private float[] green = new float[256];
-   private float[] alpha = new float[256];
-   private int updates = 0;
+	/** Red channel intensity values for the 16x16 texture (256 pixels). */
+	private float[] red = new float[256];
 
+	/** Blue channel intensity values for the 16x16 texture (256 pixels). */
+	private float[] blue = new float[256];
 
-   public TextureWaterFX() {
-      super(Block.WATER.textureId);
-   }
+	/** Green channel intensity values for the 16x16 texture (256 pixels). */
+	private float[] green = new float[256];
 
-   public final void animate() {
-      ++this.updates;
+	/** Alpha channel (wave height) values for controlling animation intensity. */
+	private float[] alpha = new float[256];
 
-      int var1;
-      int var2;
-      float var3;
-      int var4;
-      int var5;
-      int var6;
-      for(var1 = 0; var1 < 16; ++var1) {
-         for(var2 = 0; var2 < 16; ++var2) {
-            var3 = 0.0F;
+	/** Counter tracking the number of animation frames since texture creation. */
+	private int updates = 0;
 
-            for(var4 = var1 - 1; var4 <= var1 + 1; ++var4) {
-               var5 = var4 & 15;
-               var6 = var2 & 15;
-               var3 += this.red[var5 + (var6 << 4)];
-            }
+	/**
+	 * Constructs a new TextureWaterFX animation for water texture effects.
+	 * Associates this animation with the water block's texture ID.
+	 */
+	public TextureWaterFX() {
+		// Initialize with the OpenGL texture ID of the water block
+		super(Block.WATER.textureId);
+	}
 
-            this.blue[var1 + (var2 << 4)] = var3 / 3.3F + this.green[var1 + (var2 << 4)] * 0.8F;
-         }
-      }
+	/**
+	 * Updates the water texture animation for the current frame.
+	 * Applies wave equation simulation with wave propagation, smoothing, and random ripple generation.
+	 * Each frame performs: wave height averaging, wave dissipation, ripple generation,
+	 * and color value computation for RGBA output with cyan/blue coloring.
+	 */
+	public final void animate() {
+		// Increment the animation frame counter
+		++this.updates;
 
-      for(var1 = 0; var1 < 16; ++var1) {
-         for(var2 = 0; var2 < 16; ++var2) {
-            this.green[var1 + (var2 << 4)] += this.alpha[var1 + (var2 << 4)] * 0.05F;
-            if(this.green[var1 + (var2 << 4)] < 0.0F) {
-               this.green[var1 + (var2 << 4)] = 0.0F;
-            }
+		// Define loop variables for pixel coordinates and height calculations
+		int pixelX;
+		int pixelY;
+		float waveHeight;
+		int neighborX;
+		int neighborY;
+		int wrappedX;
 
-            this.alpha[var1 + (var2 << 4)] -= 0.1F;
-            if(Math.random() < 0.05D) {
-               this.alpha[var1 + (var2 << 4)] = 0.5F;
-            }
-         }
-      }
+		// Apply wave propagation: average neighboring wave heights to smooth the wave field
+		// This implements the wave equation with damping for smooth water surface
+		for(pixelX = 0; pixelX < 16; ++pixelX) {
+			for(pixelY = 0; pixelY < 16; ++pixelY) {
+				// Initialize wave height accumulator for this pixel
+				waveHeight = 0.0F;
 
-      float[] var8 = this.blue;
-      this.blue = this.red;
-      this.red = var8;
+				// Apply 1D horizontal averaging (vertical neighbors only)
+				// Creates smooth wave propagation along the wave field
+				for(neighborX = pixelX - 1; neighborX <= pixelX + 1; ++neighborX) {
+					// Wrap X coordinate to handle texture boundaries (tiled wrapping)
+					wrappedX = neighborX & 15;
 
-      for(var2 = 0; var2 < 256; ++var2) {
-         if((var3 = this.red[var2]) > 1.0F) {
-            var3 = 1.0F;
-         }
+					// Wrap Y coordinate to handle texture boundaries (tiled wrapping)
+					neighborY = pixelY & 15;
 
-         if(var3 < 0.0F) {
-            var3 = 0.0F;
-         }
+					// Accumulate wave heights from horizontal neighbors
+					waveHeight += this.red[wrappedX + (neighborY << 4)];
+				}
 
-         float var9 = var3 * var3;
-         var5 = (int)(32.0F + var9 * 32.0F);
-         var6 = (int)(50.0F + var9 * 64.0F);
-         var1 = 255;
-         int var10 = (int)(146.0F + var9 * 50.0F);
-         if(this.anaglyph) {
-            var1 = (var5 * 30 + var6 * 59 + 2805) / 100;
-            var4 = (var5 * 30 + var6 * 70) / 100;
-            int var7 = (var5 * 30 + 17850) / 100;
-            var5 = var1;
-            var6 = var4;
-            var1 = var7;
-         }
+				// Store the smoothed wave height in the blue channel for next frame
+				// Combines averaged height (wave propagation) with damped previous height (smoothing)
+				this.blue[pixelX + (pixelY << 4)] = waveHeight / 3.3F + this.green[pixelX + (pixelY << 4)] * 0.8F;
+			}
+		}
 
-         this.textureData[var2 << 2] = (byte)var5;
-         this.textureData[(var2 << 2) + 1] = (byte)var6;
-         this.textureData[(var2 << 2) + 2] = (byte)var1;
-         this.textureData[(var2 << 2) + 3] = (byte)var10;
-      }
+		// Apply wave dissipation and ripple generation
+		for(pixelX = 0; pixelX < 16; ++pixelX) {
+			for(pixelY = 0; pixelY < 16; ++pixelY) {
+				// Update wave height from energy source (alpha channel)
+				// Add 5% of the alpha (ripple energy) to the green channel each frame
+				this.green[pixelX + (pixelY << 4)] += this.alpha[pixelX + (pixelY << 4)] * 0.05F;
 
-   }
+				// Clamp green values to non-negative (no negative wave heights)
+				if(this.green[pixelX + (pixelY << 4)] < 0.0F) {
+					this.green[pixelX + (pixelY << 4)] = 0.0F;
+				}
+
+				// Decay alpha values (ripple energy dissipates over time) at 10% per frame
+				this.alpha[pixelX + (pixelY << 4)] -= 0.1F;
+
+				// Randomly generate new ripples (5% chance per pixel per frame)
+				// High alpha values create bright "wave peaks" for ripple effect
+				if(Math.random() < 0.05D) {
+					this.alpha[pixelX + (pixelY << 4)] = 0.5F;
+				}
+			}
+		}
+
+		// Swap blue and red buffers to advance the simulation by one frame
+		// This implements the "ping-pong" buffer pattern for updating wave field
+		float[] tempBuffer = this.blue;
+		this.blue = this.red;
+		this.red = tempBuffer;
+
+		// Convert floating-point height values to byte RGBA format for texture upload
+		// Iterates through all 256 pixels in the texture
+		for(pixelY = 0; pixelY < 256; ++pixelY) {
+			// Normalize and clamp the wave height to 0.0-1.0 range
+			if((waveHeight = this.red[pixelY]) > 1.0F) {
+				waveHeight = 1.0F;
+			}
+
+			if(waveHeight < 0.0F) {
+				waveHeight = 0.0F;
+			}
+
+			// Calculate brightness from wave height (squared for nonlinear contrast)
+			float brightnessFactor = waveHeight * waveHeight;
+
+			// Calculate RGB components with cyan/blue coloring for water
+			// Red channel: dark (32-64 range, minimal red in water)
+			neighborX = (int)(32.0F + brightnessFactor * 32.0F);
+
+			// Green channel: medium (50-114 range, creates cyan when combined with blue)
+			neighborY = (int)(50.0F + brightnessFactor * 64.0F);
+
+			// Blue channel: bright (255 always, water is always fully blue)
+			pixelX = 255;
+
+			// Alpha channel (brightness) for water clarity (146-196 range)
+			wrappedX = (int)(146.0F + brightnessFactor * 50.0F);
+
+			// Apply anaglyph 3D color processing if enabled for stereoscopic rendering
+			if(this.anaglyph) {
+				// Convert to grayscale using standard luminance formula
+				pixelX = (neighborX * 30 + neighborY * 59 + 2805) / 100;
+
+				// Apply anaglyph separation: left eye gets grayscale, right eye gets color shifted
+				int greenAnaglyph = (neighborX * 30 + neighborY * 70) / 100;
+
+				// Preserve blue component with anaglyph processing
+				int blueAnaglyph = (neighborX * 30 + 17850) / 100;
+
+				// Update color values with anaglyph processing
+				neighborX = pixelX;
+				neighborY = greenAnaglyph;
+				pixelX = blueAnaglyph;
+			}
+
+			// Store RGBA pixel data in texture buffer (4 bytes per pixel)
+			// Pixel index to byte index: pixelIndex * 4
+			this.textureData[pixelY << 2] = (byte)neighborX;
+			this.textureData[(pixelY << 2) + 1] = (byte)neighborY;
+			this.textureData[(pixelY << 2) + 2] = (byte)pixelX;
+			this.textureData[(pixelY << 2) + 3] = (byte)wrappedX;
+		}
+	}
 }
+
+
