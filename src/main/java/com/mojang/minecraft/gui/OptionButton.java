@@ -1,10 +1,21 @@
 package com.mojang.minecraft.gui;
 
-import com.mojang.minecraft.gui.Button;
-
+/**
+ * A specialized button used in option screens, typically with a fixed width.
+ */
 public final class OptionButton extends Button {
 
-   public OptionButton(int var1, int var2, int var3, String var4) {
-      super(var1, var2, var3, 150, 20, var4);
-   }
+	/**
+	 * Creates a new option button with default dimensions (150x20).
+	 *
+	 * @param id   The button ID.
+	 * @param x    The X position.
+	 * @param y    The Y position.
+	 * @param text The button text.
+	 */
+	public OptionButton(int id, int x, int y, String text) {
+		super(id, x, y, 150, 20, text);
+	}
 }
+
+
