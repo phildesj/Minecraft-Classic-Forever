@@ -1,33 +1,60 @@
 package com.mojang.minecraft.gui;
 
-import com.mojang.minecraft.gui.Screen;
-
+/**
+ * A clickable GUI button.
+ */
 public class Button extends Screen {
 
-   int width;
-   int height;
-   public int x;
-   public int y;
-   public String text;
-   public int id;
-   public boolean active;
-   public boolean visible;
+	/** The width of the button. */
+	int width;
+	/** The height of the button. */
+	int height;
+	/** The X position of the button on screen. */
+	public int x;
+	/** The Y position of the button on screen. */
+	public int y;
+	/** The text displayed on the button. */
+	public String text;
+	/** The ID of the button. */
+	public int id;
+	/** Whether the button is currently active and clickable. */
+	public boolean active;
+	/** Whether the button is currently visible. */
+	public boolean visible;
 
+	/**
+	 * Creates a new button with default dimensions (200x20).
+	 *
+	 * @param id   The button ID.
+	 * @param x    The X position.
+	 * @param y    The Y position.
+	 * @param text The button text.
+	 */
+	public Button(int id, int x, int y, String text) {
+		this(id, x, y, 200, 20, text);
+	}
 
-   public Button(int var1, int var2, int var3, String var4) {
-      this(var1, var2, var3, 200, 20, var4);
-   }
-
-   protected Button(int var1, int var2, int var3, int var4, int var5, String var6) {
-      this.width = 200;
-      this.height = 20;
-      this.active = true;
-      this.visible = true;
-      this.id = var1;
-      this.x = var2;
-      this.y = var3;
-      this.width = var4;
-      this.height = 20;
-      this.text = var6;
-   }
+	/**
+	 * Creates a new button with custom dimensions.
+	 *
+	 * @param id     The button ID.
+	 * @param x      The X position.
+	 * @param y      The Y position.
+	 * @param width  The width.
+	 * @param height The height.
+	 * @param text   The button text.
+	 */
+	protected Button(int id, int x, int y, int width, int height, String text) {
+		this.active = true;
+		this.visible = true;
+		this.id = id;
+		this.x = x;
+		this.y = y;
+		this.width = width;
+		this.height = height;
+		this.text = text;
+	}
 }
+
+
+
