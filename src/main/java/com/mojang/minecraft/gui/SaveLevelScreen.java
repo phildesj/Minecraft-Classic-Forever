@@ -7,60 +7,112 @@ import com.mojang.minecraft.gui.LevelNameScreen;
 import com.mojang.minecraft.gui.LoadLevelScreen;
 import java.io.File;
 
+/**
+ * A screen for saving levels, either to online storage or a local file.
+ * Extends LoadLevelScreen and overrides the behavior to save instead of load.
+ */
 public final class SaveLevelScreen extends LoadLevelScreen {
 
-   public SaveLevelScreen(GuiScreen var1) {
-      super(var1);
-      this.title = "Save level";
-      this.saving = true;
-   }
+	/**
+	 * Creates a new save level screen.
+	 *
+	 * @param parentScreen The parent screen to return to after saving.
+	 */
+	public SaveLevelScreen(GuiScreen parentScreen) {
+		super(parentScreen);
+		this.title = "Save level";
+		this.saving = true;
+	}
 
-   public final void onOpen() {
-      super.onOpen();
-      ((Button)this.buttons.get(5)).text = "Save file...";
-   }
+	@Override
+	public final void onOpen() {
+		super.onOpen();
+		// Change button 5 text from "Load file..." to "Save file..."
+		((Button) this.buttons.get(5)).text = "Save file...";
+	}
 
-   protected final void setLevels(String[] var1) {
-      for(int var2 = 0; var2 < 5; ++var2) {
-         ((Button)this.buttons.get(var2)).text = var1[var2];
-         ((Button)this.buttons.get(var2)).visible = true;
-         ((Button)this.buttons.get(var2)).active = this.minecraft.session.hasPaid;
-      }
+	/**
+	 * Sets up the online level save buttons with appropriate names and availability.
+	 *
+	 * @param levelNames The names of the online levels available.
+	 */
+	@Override
+	protected final void setLevels(String[] levelNames) {
+		// Set up buttons for online level saving
+		for (int i = 0; i < 5; ++i) {
+			Button button = ((Button) this.buttons.get(i));
+			button.text = levelNames[i];
+			button.visible = true;
+			// Only allow saving to online storage if user has premium
+			button.active = this.minecraft.session.hasPaid;
+		}
+	}
 
-   }
+	@Override
+	public final void render(int mouseX, int mouseY) {
+		super.render(mouseX, mouseY);
 
-   public final void render(int var1, int var2) {
-      super.render(var1, var2);
-      if(!this.minecraft.session.hasPaid) {
-         drawFadingBox(this.width / 2 - 80, 72, this.width / 2 + 80, 120, -536870912, -536870912);
-         drawCenteredString(this.fontRenderer, "Premium only!", this.width / 2, 80, 16748688);
-         drawCenteredString(this.fontRenderer, "Purchase the game to be able", this.width / 2, 96, 14712960);
-         drawCenteredString(this.fontRenderer, "to save your levels online.", this.width / 2, 104, 14712960);
-      }
-   }
+		// Display premium-only message if user hasn't purchased the game
+		if (!this.minecraft.session.hasPaid) {
+			drawFadingBox(this.width / 2 - 80, 72, this.width / 2 + 80, 120, -536870912, -536870912);
+			drawCenteredString(this.fontRenderer, "Premium only!", this.width / 2, 80, 16748688);
+			drawCenteredString(this.fontRenderer, "Purchase the game to be able", this.width / 2, 96, 14712960);
+			drawCenteredString(this.fontRenderer, "to save your levels online.", this.width / 2, 104, 14712960);
+		}
+	}
 
-   @Override
-   protected final void openLevel(File var1) {
-      if(!var1.getName().endsWith(".mine")) {
-         var1 = new File(var1.getParentFile(), var1.getName() + ".mine");
-      }
+	/**
+	 * Saves the level to a local file.
+	 * Automatically adds .mine extension if not present.
+	 *
+	 * @param file The file to save to.
+	 */
+	@Override
+	protected final void openLevel(File file) {
+		// Ensure the file has the .mine extension
+		if (!file.getName().endsWith(".mine")) {
+			file = new File(file.getParentFile(), file.getName() + ".mine");
+		}
 
-      File var2 = var1;
-      Minecraft var3 = this.minecraft;
-      this.minecraft.levelIo.save(var3.level, var2);
-      this.minecraft.setCurrentScreen(this.parent);
-   }
+		// Save the current level to the file
+		this.minecraft.levelIo.save(this.minecraft.level, file);
 
-   @Override
-   protected final void openLevel(int var1) {
-      this.minecraft.setCurrentScreen(new LevelNameScreen(this, ((Button)this.buttons.get(var1)).text, var1));
-   }
+		// Return to the parent screen
+		this.minecraft.setCurrentScreen(this.parent);
+	}
 
-   @Override
-   protected void onButtonClick(Button button) {
-	   super.onButtonClick(button);
-	   if(button.id == 5) {
-		   this.minecraft.setCurrentScreen(new LevelNameScreen(this, "New level", 5));
-	   }
-   }
+	/**
+	 * Saves the level to online storage.
+	 * Opens the level name screen to allow the user to enter a name.
+	 *
+	 * @param levelIndex The index of the selected online level.
+	 */
+	@Override
+	protected final void openLevel(int levelIndex) {
+		// Open the level name screen for saving to online storage
+		String levelName = ((Button) this.buttons.get(levelIndex)).text;
+		this.minecraft.setCurrentScreen(new LevelNameScreen(this, levelName, levelIndex));
+	}
+
+	/**
+	 * Handles button clicks on the save screen.
+	 * Routes to appropriate save method based on button id.
+	 *
+	 * @param button The button that was clicked.
+	 */
+	@Override
+	protected void onButtonClick(Button button) {
+		// Only handle online level saving through LevelNameScreen
+		// For local file saving (button id 5), let the parent class handle the file dialog
+		if (button.id < 5 && this.loaded) {
+			// Save to online storage: open level name dialog
+			this.minecraft.setCurrentScreen(new LevelNameScreen(this, ((Button) this.buttons.get(button.id)).text, button.id));
+		} else if (button.id == 5) {
+			// Save to local file: let parent class handle the file dialog
+			super.onButtonClick(button);
+		} else if (button.id == 6) {
+			// Cancel button: return to parent screen
+			super.onButtonClick(button);
+		}
+	}
 }
