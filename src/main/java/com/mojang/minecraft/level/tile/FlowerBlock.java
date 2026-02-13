@@ -21,15 +21,15 @@ public class FlowerBlock extends Block {
 	 * Constructs a FlowerBlock with the specified block ID and texture ID.
 	 * Sets up physics, bounds, and initializes the flower as a small cross-shaped block.
 	 *
-	 * @param var1 the unique block ID for this flower type
-	 * @param var2 the texture ID for this flower's appearance
+	 * @param blockId the unique block ID for this flower type
+	 * @param textureId the texture ID for this flower's appearance
 	 */
-	protected FlowerBlock(int var1, int var2) {
-		super(var1);
-		this.textureId = var2;
+	protected FlowerBlock(int blockId, int textureId) {
+		super(blockId);
+		this.textureId = textureId;
 		this.setPhysics(true);
-		float var3 = 0.2F;
-		this.setBounds(0.5F - var3, 0.0F, 0.5F - var3, var3 + 0.5F, var3 * 3.0F, var3 + 0.5F);
+		float size = 0.2F;
+		this.setBounds(0.5F - size, 0.0F, 0.5F - size, size + 0.5F, size * 3.0F, size + 0.5F);
 	}
 
 	/**
@@ -45,8 +45,8 @@ public class FlowerBlock extends Block {
 	@Override
 	public void update(Level level, int x, int y, int z, Random rand) {
 		if(!level.growTrees) {
-			int var6 = level.getTile(x, y - 1, z);
-			if(!level.isLit(x, y, z) || var6 != Block.DIRT.id && var6 != Block.GRASS.id) {
+			int blockBelowId = level.getTile(x, y - 1, z);
+			if(!level.isLit(x, y, z) || blockBelowId != Block.DIRT.id && blockBelowId != Block.GRASS.id) {
 				level.setTile(x, y, z, 0);
 			}
 
@@ -57,38 +57,38 @@ public class FlowerBlock extends Block {
 	 * Renders the flower as a cross-shaped set of two overlapping quads.
 	 * The flower is rendered with proper texture coordinates and positioned in world space.
 	 *
-	 * @param var1 the shape renderer to use for drawing
-	 * @param var2 the x coordinate offset for rendering
-	 * @param var3 the y coordinate offset for rendering
-	 * @param var4 the z coordinate offset for rendering
+	 * @param shapeRenderer the shape renderer to use for drawing
+	 * @param xOffset the x coordinate offset for rendering
+	 * @param yOffset the y coordinate offset for rendering
+	 * @param zOffset the z coordinate offset for rendering
 	 */
-	private void render(ShapeRenderer var1, float var2, float var3, float var4) {
+	private void render(ShapeRenderer shapeRenderer, float xOffset, float yOffset, float zOffset) {
 		// Get texture coordinates from the texture atlas
-		int var15;
-		int var5 = (var15 = this.getTextureId(15)) % 16 << 4;
-		int var6 = var15 / 16 << 4;
-		float var16 = (float)var5 / 256.0F;
-		float var17 = ((float)var5 + 15.99F) / 256.0F;
-		float var7 = (float)var6 / 256.0F;
-		float var18 = ((float)var6 + 15.99F) / 256.0F;
+		int textureIndex;
+		int texturePixelX = (textureIndex = this.getTextureId(15)) % 16 << 4;
+		int texturePixelY = textureIndex / 16 << 4;
+		float minU = (float)texturePixelX / 256.0F;
+		float maxU = ((float)texturePixelX + 15.99F) / 256.0F;
+		float minV = (float)texturePixelY / 256.0F;
+		float maxV = ((float)texturePixelY + 15.99F) / 256.0F;
 
 		// Render two overlapping quads at 45 degree angles to create a cross shape
-		for(int var8 = 0; var8 < 2; ++var8) {
-			float var9 = (float)((double)MathHelper.sin((float)var8 * 3.1415927F / 2.0F + 0.7853982F) * 0.5D);
-			float var10 = (float)((double)MathHelper.cos((float)var8 * 3.1415927F / 2.0F + 0.7853982F) * 0.5D);
-			float var11 = var2 + 0.5F - var9;
-			var9 += var2 + 0.5F;
-			float var13 = var3 + 1.0F;
-			float var14 = var4 + 0.5F - var10;
-			var10 += var4 + 0.5F;
-			var1.vertexUV(var11, var13, var14, var17, var7);
-			var1.vertexUV(var9, var13, var10, var16, var7);
-			var1.vertexUV(var9, var3, var10, var16, var18);
-			var1.vertexUV(var11, var3, var14, var17, var18);
-			var1.vertexUV(var9, var13, var10, var17, var7);
-			var1.vertexUV(var11, var13, var14, var16, var7);
-			var1.vertexUV(var11, var3, var14, var16, var18);
-			var1.vertexUV(var9, var3, var10, var17, var18);
+		for(int quadIndex = 0; quadIndex < 2; ++quadIndex) {
+			float sinValue = (float)((double)MathHelper.sin((float)quadIndex * 3.1415927F / 2.0F + 0.7853982F) * 0.5D);
+			float cosValue = (float)((double)MathHelper.cos((float)quadIndex * 3.1415927F / 2.0F + 0.7853982F) * 0.5D);
+			float x1 = xOffset + 0.5F - sinValue;
+			float x2 = sinValue + xOffset + 0.5F;
+			float y1 = yOffset + 1.0F;
+			float z1 = zOffset + 0.5F - cosValue;
+			float z2 = cosValue + zOffset + 0.5F;
+			shapeRenderer.vertexUV(x1, y1, z1, maxU, minV);
+			shapeRenderer.vertexUV(x2, y1, z2, minU, minV);
+			shapeRenderer.vertexUV(x2, yOffset, z2, minU, maxV);
+			shapeRenderer.vertexUV(x1, yOffset, z1, maxU, maxV);
+			shapeRenderer.vertexUV(x2, y1, z2, maxU, minV);
+			shapeRenderer.vertexUV(x1, y1, z1, minU, minV);
+			shapeRenderer.vertexUV(x1, yOffset, z1, minU, maxV);
+			shapeRenderer.vertexUV(x2, yOffset, z2, maxU, maxV);
 		}
 
 	}
@@ -119,14 +119,14 @@ public class FlowerBlock extends Block {
 	 * Renders a preview of this flower for inventory or UI display.
 	 * Renders the flower with normal shading from above.
 	 *
-	 * @param var1 the shape renderer to use for drawing
+	 * @param shapeRenderer the shape renderer to use for drawing
 	 */
 	@Override
-	public final void renderPreview(ShapeRenderer var1) {
-		var1.normal(0.0F, 1.0F, 0.0F);
-		var1.begin();
-		this.render(var1, 0.0F, 0.4F, -0.3F);
-		var1.end();
+	public final void renderPreview(ShapeRenderer shapeRenderer) {
+		shapeRenderer.normal(0.0F, 1.0F, 0.0F);
+		shapeRenderer.begin();
+		this.render(shapeRenderer, 0.0F, 0.4F, -0.3F);
+		shapeRenderer.end();
 	}
 
 	/**
@@ -144,18 +144,18 @@ public class FlowerBlock extends Block {
 	 * Renders this flower in the world with proper lighting and brightness.
 	 * Applies brightness calculations before rendering the cross shape.
 	 *
-	 * @param var1 the level containing this flower
-	 * @param var2 the x coordinate of the flower
-	 * @param var3 the y coordinate of the flower
-	 * @param var4 the z coordinate of the flower
-	 * @param var5 the shape renderer to use for drawing
+	 * @param level the level containing this flower
+	 * @param x the x coordinate of the flower
+	 * @param y the y coordinate of the flower
+	 * @param z the z coordinate of the flower
+	 * @param shapeRenderer the shape renderer to use for drawing
 	 * @return true if the flower was rendered, false otherwise
 	 */
 	@Override
-	public final boolean render(Level var1, int var2, int var3, int var4, ShapeRenderer var5) {
-		float var6 = var1.getBrightness(var2, var3, var4);
-		var5.color(var6, var6, var6);
-		this.render(var5, (float)var2, (float)var3, (float)var4);
+	public final boolean render(Level level, int x, int y, int z, ShapeRenderer shapeRenderer) {
+		float brightness = level.getBrightness(x, y, z);
+		shapeRenderer.color(brightness, brightness, brightness);
+		this.render(shapeRenderer, (float)x, (float)y, (float)z);
 		return true;
 	}
 
