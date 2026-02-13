@@ -22,13 +22,13 @@ public final class GlassBlock extends Block {
 	/**
 	 * Constructs a GlassBlock with the specified block ID and texture ID.
 	 * Uses hardcoded block ID 20 and texture ID 49 for the glass block.
-	 * The showNeighborSides parameter is provided but not used, defaulting to false.
+	 * The shouldShowNeighborSides parameter is provided but not used, defaulting to false.
 	 *
-	 * @param var1 the block ID parameter (unused, fixed to 20)
-	 * @param var2 the texture ID parameter (unused, fixed to 49)
-	 * @param var3 the showNeighborSides parameter (unused, defaults to false)
+	 * @param blockId the block ID parameter (unused, fixed to 20)
+	 * @param textureId the texture ID parameter (unused, fixed to 49)
+	 * @param shouldShowNeighborSides the showNeighborSides parameter (unused, defaults to false)
 	 */
-	protected GlassBlock(int var1, int var2, boolean var3) {
+	protected GlassBlock(int blockId, int textureId, boolean shouldShowNeighborSides) {
 		super(20, 49);
 	}
 
@@ -57,8 +57,8 @@ public final class GlassBlock extends Block {
 	 */
 	@Override
 	public final boolean canRenderSide(Level level, int x, int y, int z, int side) {
-		int var6 = level.getTile(x, y, z);
-		return !this.showNeighborSides && var6 == this.id?false:super.canRenderSide(level, x, y, z, side);
+		int adjacentBlockId = level.getTile(x, y, z);
+		return !this.showNeighborSides && adjacentBlockId == this.id?false:super.canRenderSide(level, x, y, z, side);
 	}
 
 	/**
