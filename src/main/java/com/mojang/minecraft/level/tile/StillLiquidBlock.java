@@ -9,8 +9,8 @@ public final class StillLiquidBlock extends LiquidBlock {
 
    protected StillLiquidBlock(int var1, LiquidType var2) {
       super(var1, var2);
-      this.movingId = var1 - 1;
-      this.stillId = var1;
+      this.flowingLiquidId = var1 - 1;
+      this.stillLiquidId = var1;
       this.setPhysics(false);
    }
 
@@ -40,15 +40,15 @@ public final class StillLiquidBlock extends LiquidBlock {
 
       if(var5 != 0) {
          LiquidType var7 = Block.blocks[var5].getLiquidType();
-         if(this.type == LiquidType.WATER && var7 == LiquidType.LAVA || var7 == LiquidType.WATER && this.type == LiquidType.LAVA) {
+         if(this.liquidType == LiquidType.WATER && var7 == LiquidType.LAVA || var7 == LiquidType.WATER && this.liquidType == LiquidType.LAVA) {
             var1.setTile(var2, var3, var4, Block.STONE.id);
             return;
          }
       }
 
       if(var6) {
-         var1.setTileNoUpdate(var2, var3, var4, this.movingId);
-         var1.addToTickNextTick(var2, var3, var4, this.movingId);
+         var1.setTileNoUpdate(var2, var3, var4, this.flowingLiquidId);
+         var1.addToTickNextTick(var2, var3, var4, this.flowingLiquidId);
       }
 
    }
