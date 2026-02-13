@@ -2,134 +2,119 @@ package com.mojang.minecraft.level.generator.noise;
 
 import java.util.Random;
 
-public class PerlinNoise extends Noise
-{
-	public PerlinNoise()
-	{
+/**
+ * An implementation of Perlin Noise, used for generating smooth, natural-looking textures and terrain.
+ */
+public class PerlinNoise extends Noise {
+
+	/** The permutation array used for noise generation. */
+	private final int[] permutations;
+
+	/**
+	 * Creates a new PerlinNoise generator with a random seed.
+	 */
+	public PerlinNoise() {
 		this(new Random());
 	}
 
-	public PerlinNoise(Random random)
-	{
-		noise = new int[512];
+	/**
+	 * Creates a new PerlinNoise generator with the specified seed.
+	 *
+	 * @param random The random number generator used to seed the permutations.
+	 */
+	public PerlinNoise(Random random) {
+		permutations = new int[512];
 
-		for(int count = 0; count < 256; noise[count] = count++)
-		{
+		for (int i = 0; i < 256; i++) {
+			permutations[i] = i;
 		}
 
-		for(int count = 0; count < 256; count++)
-		{
-			int unknown0 = random.nextInt(256 - count) + count;
-			int unknown1 = noise[count];
+		for (int i = 0; i < 256; i++) {
+			int target = random.nextInt(256 - i) + i;
+			int temp = permutations[i];
 
-			noise[count] = noise[unknown0];
-			noise[unknown0] = unknown1;
-			noise[count + 256] = noise[count];
+			permutations[i] = permutations[target];
+			permutations[target] = temp;
+			permutations[i + 256] = permutations[i];
 		}
-
 	}
 
 	@Override
-	public double compute(double x, double z)
-	{
-		double unknown0 = 0.0D;
-		double unknown1 = z;
-		double unknown2 = x;
+	public double compute(double x, double z) {
+		double y = 0.0D;
 
-		int unknown3 = (int)Math.floor(x) & 255;
-		int unknown4 = (int)Math.floor(z) & 255;
-		int unknown5 = (int)Math.floor(0.0D) & 255;
+		int floorX = (int) Math.floor(x) & 255;
+		int floorZ = (int) Math.floor(z) & 255;
+		int floorY = (int) Math.floor(y) & 255;
 
-		unknown2 -= Math.floor(unknown2);
-		unknown1 -= Math.floor(unknown1);
-		unknown0 = 0.0D - Math.floor(0.0D);
+		double relativeX = x - Math.floor(x);
+		double relativeZ = z - Math.floor(z);
+		double relativeY = y - Math.floor(y);
 
-		double unknown6 = a(unknown2);
-		double unknown7 = a(unknown1);
-		double unknown8 = a(unknown0);
+		double fadeX = fade(relativeX);
+		double fadeZ = fade(relativeZ);
+		double fadeY = fade(relativeY);
 
-		int unknown9 = noise[unknown3] + unknown4;
-		int unknown10 = noise[unknown9] + unknown5;
+		int pA = permutations[floorX] + floorZ;
+		int pAA = permutations[pA] + floorY;
+		int pAB = permutations[pA + 1] + floorY;
+		int pB = permutations[floorX + 1] + floorZ;
+		int pBA = permutations[pB] + floorY;
+		int pBB = permutations[pB + 1] + floorY;
 
-		unknown9 = noise[unknown9 + 1] + unknown5;
-		unknown3 = noise[unknown3 + 1] + unknown4;
-		unknown4 = noise[unknown3] + unknown5;
-		unknown3 = noise[unknown3 + 1] + unknown5;
-
-		// TODO: Maybe organize better.
-		return lerp(
-				unknown8,
-				lerp(
-						unknown7,
-						lerp(
-								unknown6,
-								grad(
-										noise[unknown10],
-										unknown2,
-										unknown1,
-										unknown0),
-								grad(
-										noise[unknown4],
-										unknown2 - 1.0D,
-										unknown1,
-										unknown0)),
-						lerp(
-								unknown6,
-								grad(
-										noise[unknown9],
-										unknown2,
-										unknown1 - 1.0D,
-										unknown0),
-								grad(
-										noise[unknown3],
-										unknown2 - 1.0D,
-										unknown1 - 1.0D,
-										unknown0))),
-				lerp(
-						unknown7,
-						lerp(
-								unknown6,
-								grad(
-										noise[unknown10 + 1],
-										unknown2,
-										unknown1,
-										unknown0 - 1.0D),
-								grad(
-										noise[unknown4 + 1],
-										unknown2 - 1.0D,
-										unknown1,
-										unknown0 - 1.0D)),
-						lerp(
-								unknown6,
-								grad(
-										noise[unknown9 + 1],
-										unknown2,
-										unknown1 - 1.0D,
-										unknown0 - 1.0D),
-								grad(
-										noise[unknown3 + 1],
-										unknown2 - 1.0D,
-										unknown1 - 1.0D,
-										unknown0 - 1.0D))));
+		return lerp(fadeY,
+				lerp(fadeZ,
+						lerp(fadeX,
+								grad(permutations[pAA], relativeX, relativeZ, relativeY),
+								grad(permutations[pBA], relativeX - 1.0D, relativeZ, relativeY)),
+						lerp(fadeX,
+								grad(permutations[pAB], relativeX, relativeZ - 1.0D, relativeY),
+								grad(permutations[pBB], relativeX - 1.0D, relativeZ - 1.0D, relativeY))),
+				lerp(fadeZ,
+						lerp(fadeX,
+								grad(permutations[pAA + 1], relativeX, relativeZ, relativeY - 1.0D),
+								grad(permutations[pBA + 1], relativeX - 1.0D, relativeZ, relativeY - 1.0D)),
+						lerp(fadeX,
+								grad(permutations[pAB + 1], relativeX, relativeZ - 1.0D, relativeY - 1.0D),
+								grad(permutations[pBB + 1], relativeX - 1.0D, relativeZ - 1.0D, relativeY - 1.0D))));
 	}
 
-	private int[] noise;
-
-	private static double a(double unknown0)
-	{
-		return unknown0 * unknown0 * unknown0 * (unknown0 * (unknown0 * 6.0D - 15.0D) + 10.0D);
+	/**
+	 * Quintic interpolation curve (6t^5 - 15t^4 + 10t^3).
+	 *
+	 * @param t Progress value (0.0 to 1.0).
+	 * @return The faded value.
+	 */
+	private static double fade(double t) {
+		return t * t * t * (t * (t * 6.0D - 15.0D) + 10.0D);
 	}
 
-	private static double lerp(double unknown0, double unknown1, double unknown2)
-	{
-		return unknown1 + unknown0 * (unknown2 - unknown1);
+	/**
+	 * Linear interpolation between two values.
+	 *
+	 * @param t Progress value (0.0 to 1.0).
+	 * @param a Start value.
+	 * @param b End value.
+	 * @return The interpolated value.
+	 */
+	private static double lerp(double t, double a, double b) {
+		return a + t * (b - a);
 	}
 
-	private static double grad(int unknown0, double unknown1, double unknown2, double unknown3)
-	{
-		double unknown4 = (unknown0 &= 15) < 8 ? unknown1 : unknown2;
-		double unknown5 = unknown0 < 4 ? unknown2 : (unknown0 != 12 && unknown0 != 14 ? unknown3 : unknown1);
+	/**
+	 * Computes the dot product between a pseudo-random gradient vector and the distance vector.
+	 *
+	 * @param hash A hashed value from the permutation table.
+	 * @param x    X component of the distance vector.
+	 * @param z    Z component of the distance vector.
+	 * @param y    Y component of the distance vector.
+	 * @return The gradient value.
+	 */
+	private static double grad(int hash, double x, double z, double y) {
+		int h = hash & 15;
+		double u = h < 8 ? x : z;
+		double v = h < 4 ? z : (h != 12 && h != 14 ? y : x);
 
-		return ((unknown0 & 1) == 0 ? unknown4 : -unknown4) + ((unknown0 & 2) == 0 ? unknown5 : -unknown5);
+		return ((h & 1) == 0 ? u : -u) + ((h & 2) == 0 ? v : -v);
 	}
 }
