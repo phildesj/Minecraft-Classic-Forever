@@ -19,7 +19,7 @@ public class LoadLevelScreen extends GuiScreen implements Runnable {
 	/** Whether the level list loading thread has finished. */
 	private boolean finished = false;
 	/** Whether the level list has been successfully loaded. */
-	private boolean loaded = false;
+	boolean loaded = false;
 	/** The list of level names retrieved from the server. */
 	private String[] levels = null;
 	/** Current status message shown while loading. */

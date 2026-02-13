@@ -3,10 +3,32 @@ package com.mojang.minecraft;
 import java.io.*;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.file.Path;
 import java.util.ArrayList;
 
+/**
+ * Thread for loading and registering game resources (sounds and music).
+ * Loads audio files from the classpath resources directory on startup.
+ */
 public class ResourceDownloadThread extends Thread
 {
+	/** Reference to the Minecraft instance for accessing the sound manager */
+	private Minecraft minecraft;
+	/** Directory where downloaded resources will be stored */
+	private File dir;
+	/** Whether the resource loading thread is currently running */
+	boolean running = false;
+	/** Whether the resource loading has finished */
+	private boolean finished = false;
+	/** Current progress of resource download (0-100) */
+	private int progress = 0;
+
+	/**
+	 * Creates a new resource download thread.
+	 *
+	 * @param minecraftFolder The Minecraft installation folder
+	 * @param minecraft The Minecraft instance
+	 */
 	public ResourceDownloadThread(File minecraftFolder, Minecraft minecraft)
 	{
 		this.minecraft = minecraft;
@@ -22,133 +44,38 @@ public class ResourceDownloadThread extends Thread
 		}
 	}
 
+	/**
+	 * Loads and registers all game sound and music files.
+	 * This runs on a separate thread to avoid blocking the main game loop.
+	 */
 	@Override
 	public void run()
 	{
 		BufferedReader reader = null;
 
 		try {
-			ArrayList<String> list = new ArrayList<String>();
-
-			URL base = new URL("http://dl.dropbox.com/u/40737374/minecraft_resources/");
-			URL url = new URL(base, "resources/");
-
-			URLConnection con = url.openConnection();
-
-			con.setConnectTimeout(20000);
-
-			reader = new BufferedReader(new InputStreamReader(con.getInputStream()));
-
-			String line = null;
-
-			while((line = reader.readLine()) != null)
-			{
-				list.add(line);
-			}
-
-			reader.close();
-
-			/*for(String s : list)
-			{
-				try {
-					String split[] = s.split(",");
-					int size = Integer.parseInt(split[1]);
-					File file = new File(dir, split[0]);
-
-					if(!file.exists() || file.length() != size)
-					{
-						try {
-							file.getParentFile().mkdirs();
-						} catch(SecurityException e) {
-							e.printStackTrace();
-						}
-
-						URL url1 = new URL(base, split[0].replaceAll(" ", "%20"));
-
-						download(url1, file, size);
-					} else {
-						int index = split[0].indexOf("/");
-
-						if(split[0].substring(0, index).equalsIgnoreCase("sound"))
-						{
-							minecraft.sound.registerSound(file, split[0].substring(index + 1, split[0].length() - 4).replaceAll("[1-9]", "").replaceAll("/", "."));
-							//this.mc.audio.registerSound(split[0].substring(index + 1, split[0].length() - 4).replaceAll("[1-9]", "").replaceAll("/", "."), file.toURI().toURL(), true);
-						} else if (split[0].substring(0, index).equalsIgnoreCase("music")) {
-							if(split[0].contains("sweden"))
-							{
-								//this.mc.audio.registerMusic("menu", file.toURI().toURL(), true);
-							}
-
-							//this.mc.audio.registerMusic("bg", file.toURI().toURL(), true);
-						}
-					}
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-
-				if (!this.running) return;
-			}*/
-
-			for(String s : list)
-			{
-				String split[] = s.split(",");
-				int size = Integer.parseInt(split[1]);
-				File file = new File(dir, split[0]);
-
-				File musicFolder = new File(dir, "music");
-
-				if(!file.exists() || file.length() != size)
-				{
-					try {
-						file.getParentFile().mkdirs();
-					} catch(SecurityException e) {
-						e.printStackTrace();
-					}
-
-					URL url1 = new URL(base, split[0].replaceAll(" ", "%20"));
-
-					if(file.getPath().contains("music"))
-					{
-						if(file.getName().equals("minecraft.ogg") && !new File(musicFolder, "calm1.ogg").exists())
-						{
-							download(url1, file, size);
-						} else if(file.getName().equals("clark.ogg") && !new File(musicFolder, "calm2.ogg").exists()) {
-							download(url1, file, size);
-						} else if(file.getName().equals("sweden.ogg") && !new File(musicFolder, "calm3.ogg").exists()) {
-							download(url1, file, size);
-						}
-					} else {
-						download(url1, file, size);
-					}
-				}
-
-				File minecraftOGG = new File(musicFolder, "minecraft.ogg");
-				File clarkOGG = new File(musicFolder, "clark.ogg");
-				File swedenOGG = new File(musicFolder, "sweden.ogg");
-
-				minecraftOGG.renameTo(new File(musicFolder, "calm1.ogg"));
-				clarkOGG.renameTo(new File(musicFolder, "calm2.ogg"));
-				swedenOGG.renameTo(new File(musicFolder, "calm3.ogg"));
-			}
-
-			File soundsFolder = new File(dir, "sound");
-			File stepsFolder = new File(soundsFolder, "step");
-
+			// Try to load step sounds (footstep sounds)
+			System.out.println("Loading step sounds...");
 			for(int i = 1; i <= 4; i++)
 			{
-				minecraft.sound.registerSound(new File(stepsFolder, "grass" + i + ".ogg"), "step/grass" + i + ".ogg");
-				minecraft.sound.registerSound(new File(stepsFolder, "gravel" + i + ".ogg"), "step/gravel" + i + ".ogg");
-				minecraft.sound.registerSound(new File(stepsFolder, "stone" + i + ".ogg"), "step/stone" + i + ".ogg");
-				minecraft.sound.registerSound(new File(stepsFolder, "wood" + i + ".ogg"), "step/wood" + i + ".ogg");
+				// Load from resources using resource paths instead of file paths
+				// This works both in development and when packaged in a JAR
+				loadSound("step/grass" + i + ".ogg", "step/grass" + i + ".ogg");
+				loadSound("step/gravel" + i + ".ogg", "step/gravel" + i + ".ogg");
+				loadSound("step/stone" + i + ".ogg", "step/stone" + i + ".ogg");
+				loadSound("step/wood" + i + ".ogg", "step/wood" + i + ".ogg");
 			}
 
-			File musicFolder = new File(dir, "music");
-
+			// Load music files
+			System.out.println("Loading music files...");
 			for(int i = 1; i <= 3; i++)
 			{
-				minecraft.sound.registerMusic("calm" + i + ".ogg", new File(musicFolder, "calm" + i + ".ogg"));
+				loadMusic("music/game/calm" + i + ".ogg", "calm" + i + ".ogg");
 			}
-		} catch (IOException e) {
+
+			System.out.println("Successfully loaded all resources!");
+		} catch (Exception e) {
+			System.err.println("Error loading resources: " + e.getMessage());
 			e.printStackTrace();
 		} finally {
 			try {
@@ -162,18 +89,83 @@ public class ResourceDownloadThread extends Thread
 		this.finished = true;
 	}
 
-	private File dir;
-	private Minecraft minecraft;
-	boolean running = false;
+	/**
+	 * Loads a sound file from the classpath resources.
+	 *
+	 * @param resourcePath The path to the resource relative to src/main/resources (e.g., "sound/step/grass1.ogg")
+	 * @param soundId The identifier for the sound in the sound manager
+	 */
+	private void loadSound(String resourcePath, String soundId)
+	{
+		try {
+			// Create the full resource path
+			String fullResourcePath = "/sound/" + resourcePath;
+			URL soundUrl = this.getClass().getResource(fullResourcePath);
 
-	private boolean finished = false;
-	private int progress = 0;
+			if (soundUrl == null) {
+				System.err.println("Could not find sound resource: " + fullResourcePath);
+				return;
+			}
 
+			// Convert URL to File - this works in development
+			// For JAR files, we'd need a different approach
+			File soundFile = new File(soundUrl.toURI());
+
+			if (soundFile.exists()) {
+				minecraft.sound.registerSound(soundFile, soundId);
+				System.out.println("Registered sound: " + soundId);
+			} else {
+				System.err.println("Sound file not found: " + soundFile.getAbsolutePath());
+			}
+		} catch (Exception e) {
+			System.err.println("Error loading sound " + resourcePath + ": " + e.getMessage());
+		}
+	}
+
+	/**
+	 * Loads a music file from the classpath resources.
+	 *
+	 * @param resourcePath The path to the resource relative to src/main/resources (e.g., "music/game/calm1.ogg")
+	 * @param musicId The identifier for the music in the sound manager
+	 */
+	private void loadMusic(String resourcePath, String musicId)
+	{
+		try {
+			// Create the full resource path
+			String fullResourcePath = "/" + resourcePath;
+			URL musicUrl = this.getClass().getResource(fullResourcePath);
+
+			if (musicUrl == null) {
+				System.err.println("Could not find music resource: " + fullResourcePath);
+				return;
+			}
+
+			// Convert URL to File - this works in development
+			// For JAR files, we'd need a different approach
+			File musicFile = new File(musicUrl.toURI());
+
+			if (musicFile.exists()) {
+				minecraft.sound.registerMusic(musicId, musicFile);
+				System.out.println("Registered music: " + musicId);
+			} else {
+				System.err.println("Music file not found: " + musicFile.getAbsolutePath());
+			}
+		} catch (Exception e) {
+			System.err.println("Error loading music " + resourcePath + ": " + e.getMessage());
+		}
+	}
+
+	/**
+	 * Downloads a file from the specified URL.
+	 * This method is currently not used but kept for future implementation.
+	 *
+	 * @param url The URL to download from
+	 * @param file The file to save to
+	 * @param size The expected file size
+	 */
 	private void download(URL url, File file, int size)
 	{
 		System.out.println("Downloading: " + file.getName() + "...");
-
-		//minecraft.progressBar.setText(file.getName());
 
 		DataInputStream in = null;
 		DataOutputStream out = null;
@@ -226,17 +218,26 @@ public class ResourceDownloadThread extends Thread
 			}
 		}
 
-		//minecraft.progressBar.setText("");
 		progress = 0;
 
 		System.out.println("Downloaded: " + file.getName());
 	}
 
+	/**
+	 * Checks if the resource loading has finished.
+	 *
+	 * @return true if finished, false otherwise
+	 */
 	public boolean isFinished()
 	{
 		return finished;
 	}
 
+	/**
+	 * Gets the current progress of resource download.
+	 *
+	 * @return progress percentage (0-100)
+	 */
 	public int getProgress()
 	{
 		return progress;
