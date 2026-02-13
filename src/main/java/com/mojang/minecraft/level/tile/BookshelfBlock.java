@@ -13,10 +13,10 @@ public final class BookshelfBlock extends Block {
 	 * Constructs a BookshelfBlock with the specified block ID and texture ID.
 	 * Uses hardcoded block ID 47 and texture ID 35 for the bookshelf.
 	 *
-	 * @param var1 the block ID parameter (unused, fixed to 47)
-	 * @param var2 the texture ID parameter (unused, fixed to 35)
+	 * @param blockId the block ID parameter (unused, fixed to 47)
+	 * @param textureId the texture ID parameter (unused, fixed to 35)
 	 */
-	public BookshelfBlock(int var1, int var2) {
+	public BookshelfBlock(int blockId, int textureId) {
 		super(47, 35);
 	}
 
@@ -25,12 +25,12 @@ public final class BookshelfBlock extends Block {
 	 * Top and bottom faces (texture indices 0-1) use texture 4,
 	 * while side faces use the default bookshelf texture.
 	 *
-	 * @param texture the face index (0=bottom, 1=top, 2-5=sides)
+	 * @param faceIndex the face index (0=bottom, 1=top, 2-5=sides)
 	 * @return the texture ID to use for rendering this face
 	 */
 	@Override
-	protected final int getTextureId(int texture) {
-		return texture <= 1?4:this.textureId;
+	protected final int getTextureId(int faceIndex) {
+		return faceIndex <= 1?4:this.textureId;
 	}
 
 	/**
