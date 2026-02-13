@@ -7,7 +7,7 @@ import java.io.File;
 import java.io.InputStreamReader;
 import java.net.URL;
 import javax.swing.JFileChooser;
-import javax.swing.SwingUtilities;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 /**
  * A screen for loading levels, either from online storage or a local file.
@@ -120,7 +120,8 @@ public class LoadLevelScreen extends GuiScreen implements Runnable {
 					this.frozen = true;
 					LevelDialog dialog = new LevelDialog(this);
 					dialog.setDaemon(true);
-					SwingUtilities.invokeLater(dialog);
+					// Start the dialog thread to show the file chooser
+					dialog.start();
 				}
 
 				if (this.finished || this.loaded && button.id == 6) {
