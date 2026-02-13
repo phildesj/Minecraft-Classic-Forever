@@ -14,240 +14,390 @@ import java.util.List;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 
+/**
+ * LevelRenderer handles rendering of the entire game level including terrain chunks, boundaries, and water.
+ * It manages a 3D grid of chunks, sorts them by distance from the player, and renders them in proper order.
+ * Also renders level boundaries and water surfaces as background elements.
+ */
 public final class LevelRenderer {
 
-   public Level level;
-   public TextureManager textureManager;
-   public int listId;
-   public IntBuffer buffer = BufferUtils.createIntBuffer(65536);
-   public List chunks = new ArrayList();
-   private Chunk[] loadQueue;
-   public Chunk[] chunkCache;
-   private int xChunks;
-   private int yChunks;
-   private int zChunks;
-   private int baseListId;
-   public Minecraft minecraft;
-   private int[] chunkDataCache = new int['\uc350'];
-   public int ticks = 0;
-   private float lastLoadX = -9999.0F;
-   private float lastLoadY = -9999.0F;
-   private float lastLoadZ = -9999.0F;
-   public float cracks;
+	/** Reference to the current game level for accessing terrain data. */
+	public Level level;
 
+	/** Texture manager for loading and binding level textures. */
+	public TextureManager textureManager;
 
-   public LevelRenderer(Minecraft var1, TextureManager var2) {
-      this.minecraft = var1;
-      this.textureManager = var2;
-      this.listId = GL11.glGenLists(2);
-      this.baseListId = GL11.glGenLists(4096 << 6 << 1);
-   }
+	/** OpenGL display list ID for rendering level boundaries and water. */
+	public int listId;
 
-   public final void refresh() {
-      int var1;
-      if(this.chunkCache != null) {
-         for(var1 = 0; var1 < this.chunkCache.length; ++var1) {
-            this.chunkCache[var1].dispose();
-         }
-      }
+	/** Integer buffer for storing OpenGL display list IDs for rendering. */
+	public IntBuffer buffer = BufferUtils.createIntBuffer(65536);
 
-      this.xChunks = this.level.width / 16;
-      this.yChunks = this.level.depth / 16;
-      this.zChunks = this.level.height / 16;
-      this.chunkCache = new Chunk[this.xChunks * this.yChunks * this.zChunks];
-      this.loadQueue = new Chunk[this.xChunks * this.yChunks * this.zChunks];
-      var1 = 0;
+	/** List of actively loaded chunks that are visible and need rendering. */
+	public List chunks = new ArrayList();
 
-      int var2;
-      int var4;
-      for(var2 = 0; var2 < this.xChunks; ++var2) {
-         for(int var3 = 0; var3 < this.yChunks; ++var3) {
-            for(var4 = 0; var4 < this.zChunks; ++var4) {
-               this.chunkCache[(var4 * this.yChunks + var3) * this.xChunks + var2] = new Chunk(this.level, var2 << 4, var3 << 4, var4 << 4, 16, this.baseListId + var1);
-               this.loadQueue[(var4 * this.yChunks + var3) * this.xChunks + var2] = this.chunkCache[(var4 * this.yChunks + var3) * this.xChunks + var2];
-               var1 += 2;
-            }
-         }
-      }
+	/** Queue of chunks waiting to be loaded in priority order. */
+	private Chunk[] loadQueue;
 
-      for(var2 = 0; var2 < this.chunks.size(); ++var2) {
-         ((Chunk)this.chunks.get(var2)).loaded = false;
-      }
+	/** 3D cache of all chunk objects indexed by position. */
+	public Chunk[] chunkCache;
 
-      this.chunks.clear();
-      GL11.glNewList(this.listId, 4864);
-      LevelRenderer var9 = this;
-      float var10 = 0.5F;
-      GL11.glColor4f(0.5F, var10, var10, 1.0F);
-      ShapeRenderer var11 = ShapeRenderer.instance;
-      float var12 = this.level.getGroundLevel();
-      int var5 = 128;
-      if(128 > this.level.width) {
-         var5 = this.level.width;
-      }
+	/** Number of chunks in the X dimension. */
+	private int xChunks;
 
-      if(var5 > this.level.height) {
-         var5 = this.level.height;
-      }
+	/** Number of chunks in the Y dimension (vertical). */
+	private int yChunks;
 
-      int var6 = 2048 / var5;
-      var11.begin();
+	/** Number of chunks in the Z dimension. */
+	private int zChunks;
 
-      int var7;
-      for(var7 = -var5 * var6; var7 < var9.level.width + var5 * var6; var7 += var5) {
-         for(int var8 = -var5 * var6; var8 < var9.level.height + var5 * var6; var8 += var5) {
-            var10 = var12;
-            if(var7 >= 0 && var8 >= 0 && var7 < var9.level.width && var8 < var9.level.height) {
-               var10 = 0.0F;
-            }
+	/** Base OpenGL display list ID for all chunk rendering lists. */
+	private int baseListId;
 
-            var11.vertexUV((float)var7, var10, (float)(var8 + var5), 0.0F, (float)var5);
-            var11.vertexUV((float)(var7 + var5), var10, (float)(var8 + var5), (float)var5, (float)var5);
-            var11.vertexUV((float)(var7 + var5), var10, (float)var8, (float)var5, 0.0F);
-            var11.vertexUV((float)var7, var10, (float)var8, 0.0F, 0.0F);
-         }
-      }
+	/** Reference to the main Minecraft instance. */
+	public Minecraft minecraft;
 
-      var11.end();
-      GL11.glColor3f(0.8F, 0.8F, 0.8F);
-      var11.begin();
+	/** Cache array for chunk display list data used during sorting. */
+	private int[] chunkDataCache = new int['\uc350'];
 
-      for(var7 = 0; var7 < var9.level.width; var7 += var5) {
-         var11.vertexUV((float)var7, 0.0F, 0.0F, 0.0F, 0.0F);
-         var11.vertexUV((float)(var7 + var5), 0.0F, 0.0F, (float)var5, 0.0F);
-         var11.vertexUV((float)(var7 + var5), var12, 0.0F, (float)var5, var12);
-         var11.vertexUV((float)var7, var12, 0.0F, 0.0F, var12);
-         var11.vertexUV((float)var7, var12, (float)var9.level.height, 0.0F, var12);
-         var11.vertexUV((float)(var7 + var5), var12, (float)var9.level.height, (float)var5, var12);
-         var11.vertexUV((float)(var7 + var5), 0.0F, (float)var9.level.height, (float)var5, 0.0F);
-         var11.vertexUV((float)var7, 0.0F, (float)var9.level.height, 0.0F, 0.0F);
-      }
+	/** Counter for the number of ticks since level was created. */
+	public int ticks = 0;
 
-      GL11.glColor3f(0.6F, 0.6F, 0.6F);
+	/** Last known X position of the player for chunk sorting optimization. */
+	private float lastLoadX = -9999.0F;
 
-      for(var7 = 0; var7 < var9.level.height; var7 += var5) {
-         var11.vertexUV(0.0F, var12, (float)var7, 0.0F, 0.0F);
-         var11.vertexUV(0.0F, var12, (float)(var7 + var5), (float)var5, 0.0F);
-         var11.vertexUV(0.0F, 0.0F, (float)(var7 + var5), (float)var5, var12);
-         var11.vertexUV(0.0F, 0.0F, (float)var7, 0.0F, var12);
-         var11.vertexUV((float)var9.level.width, 0.0F, (float)var7, 0.0F, var12);
-         var11.vertexUV((float)var9.level.width, 0.0F, (float)(var7 + var5), (float)var5, var12);
-         var11.vertexUV((float)var9.level.width, var12, (float)(var7 + var5), (float)var5, 0.0F);
-         var11.vertexUV((float)var9.level.width, var12, (float)var7, 0.0F, 0.0F);
-      }
+	/** Last known Y position of the player for chunk sorting optimization. */
+	private float lastLoadY = -9999.0F;
 
-      var11.end();
-      GL11.glEndList();
-      GL11.glNewList(this.listId + 1, 4864);
-      var9 = this;
-      GL11.glColor3f(1.0F, 1.0F, 1.0F);
-      var10 = this.level.getWaterLevel();
-      GL11.glBlendFunc(770, 771);
-      var11 = ShapeRenderer.instance;
-      var4 = 128;
-      if(128 > this.level.width) {
-         var4 = this.level.width;
-      }
+	/** Last known Z position of the player for chunk sorting optimization. */
+	private float lastLoadZ = -9999.0F;
 
-      if(var4 > this.level.height) {
-         var4 = this.level.height;
-      }
+	/** Animation time for rendering block break cracks and effects. */
+	public float cracks;
 
-      var5 = 2048 / var4;
-      var11.begin();
+	/**
+	 * Constructs a new LevelRenderer and initializes OpenGL display lists.
+	 *
+	 * @param minecraft the Minecraft instance containing game state
+	 * @param textureManager the TextureManager for loading textures
+	 */
+	public LevelRenderer(Minecraft minecraft, TextureManager textureManager) {
+		// Store reference to the main Minecraft instance
+		this.minecraft = minecraft;
 
-      for(var6 = -var4 * var5; var6 < var9.level.width + var4 * var5; var6 += var4) {
-         for(var7 = -var4 * var5; var7 < var9.level.height + var4 * var5; var7 += var4) {
-            float var13 = var10 - 0.1F;
-            if(var6 < 0 || var7 < 0 || var6 >= var9.level.width || var7 >= var9.level.height) {
-               var11.vertexUV((float)var6, var13, (float)(var7 + var4), 0.0F, (float)var4);
-               var11.vertexUV((float)(var6 + var4), var13, (float)(var7 + var4), (float)var4, (float)var4);
-               var11.vertexUV((float)(var6 + var4), var13, (float)var7, (float)var4, 0.0F);
-               var11.vertexUV((float)var6, var13, (float)var7, 0.0F, 0.0F);
-               var11.vertexUV((float)var6, var13, (float)var7, 0.0F, 0.0F);
-               var11.vertexUV((float)(var6 + var4), var13, (float)var7, (float)var4, 0.0F);
-               var11.vertexUV((float)(var6 + var4), var13, (float)(var7 + var4), (float)var4, (float)var4);
-               var11.vertexUV((float)var6, var13, (float)(var7 + var4), 0.0F, (float)var4);
-            }
-         }
-      }
+		// Store reference to the texture manager for terrain texture loading
+		this.textureManager = textureManager;
 
-      var11.end();
-      GL11.glDisable(3042);
-      GL11.glEndList();
-      this.queueChunks(0, 0, 0, this.level.width, this.level.depth, this.level.height);
-   }
+		// Request OpenGL display list IDs for level rendering (2 lists for boundaries and water)
+		this.listId = GL11.glGenLists(2);
 
-   public final int sortChunks(Player var1, int var2) {
-      float var3 = var1.x - this.lastLoadX;
-      float var4 = var1.y - this.lastLoadY;
-      float var5 = var1.z - this.lastLoadZ;
-      if(var3 * var3 + var4 * var4 + var5 * var5 > 64.0F) {
-         this.lastLoadX = var1.x;
-         this.lastLoadY = var1.y;
-         this.lastLoadZ = var1.z;
-         Arrays.sort(this.loadQueue, new ChunkDistanceComparator(var1));
-      }
+		// Request display list IDs for all possible chunks (256*64*2 chunks in world)
+		this.baseListId = GL11.glGenLists(4096 << 6 << 1);
+	}
 
-      int var6 = 0;
+	/**
+	 * Refreshes the level renderer by rebuilding the chunk grid and rendering boundaries.
+	 * Disposes of old chunks, creates new chunk objects for the current level dimensions,
+	 * and renders static level boundaries and water surface as OpenGL display lists.
+	 * This method must be called whenever the level is changed or resized.
+	 */
+	public final void refresh() {
+		// Dispose of previously loaded chunks to free GPU memory
+		int chunkIndex;
+		if(this.chunkCache != null) {
+			for(chunkIndex = 0; chunkIndex < this.chunkCache.length; ++chunkIndex) {
+				this.chunkCache[chunkIndex].dispose();
+			}
+		}
 
-      for(int var7 = 0; var7 < this.loadQueue.length; ++var7) {
-         var6 = this.loadQueue[var7].appendLists(this.chunkDataCache, var6, var2);
-      }
+		// Calculate the number of chunks in each dimension (each chunk is 16 blocks)
+		this.xChunks = this.level.width / 16;
+		this.yChunks = this.level.depth / 16;
+		this.zChunks = this.level.height / 16;
 
-      this.buffer.clear();
-      this.buffer.put(this.chunkDataCache, 0, var6);
-      this.buffer.flip();
-      if(this.buffer.remaining() > 0) {
-         GL11.glBindTexture(3553, this.textureManager.load("/terrain.png"));
-         GL11.glCallLists(this.buffer);
-      }
+		// Create arrays to store all chunk objects and the loading queue
+		this.chunkCache = new Chunk[this.xChunks * this.yChunks * this.zChunks];
+		this.loadQueue = new Chunk[this.xChunks * this.yChunks * this.zChunks];
+		chunkIndex = 0;
 
-      return this.buffer.remaining();
-   }
+		// Create chunk objects for all positions in the 3D grid
+		int xIndex;
+		int zIndex;
+		for(xIndex = 0; xIndex < this.xChunks; ++xIndex) {
+			for(int yIndex = 0; yIndex < this.yChunks; ++yIndex) {
+				for(zIndex = 0; zIndex < this.zChunks; ++zIndex) {
+					// Calculate 1D array index from 3D chunk coordinates
+					int cacheIndex = (zIndex * this.yChunks + yIndex) * this.xChunks + xIndex;
 
-   public final void queueChunks(int var1, int var2, int var3, int var4, int var5, int var6) {
-      var1 /= 16;
-      var2 /= 16;
-      var3 /= 16;
-      var4 /= 16;
-      var5 /= 16;
-      var6 /= 16;
-      if(var1 < 0) {
-         var1 = 0;
-      }
+					// Create chunk with position in blocks and assign display list ID
+					this.chunkCache[cacheIndex] = new Chunk(this.level, xIndex << 4, yIndex << 4, zIndex << 4, 16, this.baseListId + chunkIndex);
 
-      if(var2 < 0) {
-         var2 = 0;
-      }
+					// Add chunk to loading queue
+					this.loadQueue[cacheIndex] = this.chunkCache[cacheIndex];
 
-      if(var3 < 0) {
-         var3 = 0;
-      }
+					// Each chunk uses 2 display list IDs
+					chunkIndex += 2;
+				}
+			}
+		}
 
-      if(var4 > this.xChunks - 1) {
-         var4 = this.xChunks - 1;
-      }
+		// Clear previously loaded chunks list
+		for(xIndex = 0; xIndex < this.chunks.size(); ++xIndex) {
+			((Chunk)this.chunks.get(xIndex)).loaded = false;
+		}
 
-      if(var5 > this.yChunks - 1) {
-         var5 = this.yChunks - 1;
-      }
+		this.chunks.clear();
 
-      if(var6 > this.zChunks - 1) {
-         var6 = this.zChunks - 1;
-      }
+		// Compile OpenGL display list for level boundaries and ground texture
+		GL11.glNewList(this.listId, 4864);
+		LevelRenderer levelRenderer = this;
+		float boundaryColor = 0.5F;
+		GL11.glColor4f(0.5F, boundaryColor, boundaryColor, 1.0F);
+		ShapeRenderer shapeRenderer = ShapeRenderer.instance;
 
-      for(var1 = var1; var1 <= var4; ++var1) {
-         for(int var7 = var2; var7 <= var5; ++var7) {
-            for(int var8 = var3; var8 <= var6; ++var8) {
-               Chunk var9;
-               if(!(var9 = this.chunkCache[(var8 * this.yChunks + var7) * this.xChunks + var1]).loaded) {
-                  var9.loaded = true;
-                  this.chunks.add(this.chunkCache[(var8 * this.yChunks + var7) * this.xChunks + var1]);
-               }
-            }
-         }
-      }
+		// Get the ground level (void floor height)
+		float groundLevel = this.level.getGroundLevel();
 
-   }
+		// Calculate grid size for rendering boundaries (minimum 128 blocks, max level dimension)
+		int gridSize = 128;
+		if(128 > this.level.width) {
+			gridSize = this.level.width;
+		}
+
+		if(gridSize > this.level.height) {
+			gridSize = this.level.height;
+		}
+
+		// Calculate number of grid squares to extend beyond level boundaries
+		int gridExtension = 2048 / gridSize;
+		shapeRenderer.begin();
+
+		// Render ground plane with texture (void floor at level bottom)
+		int gridX;
+		for(gridX = -gridSize * gridExtension; gridX < levelRenderer.level.width + gridSize * gridExtension; gridX += gridSize) {
+			for(int gridZ = -gridSize * gridExtension; gridZ < levelRenderer.level.height + gridSize * gridExtension; gridZ += gridSize) {
+				// Ground plane is at void level, or 0 if inside level boundaries
+				boundaryColor = groundLevel;
+				if(gridX >= 0 && gridZ >= 0 && gridX < levelRenderer.level.width && gridZ < levelRenderer.level.height) {
+					boundaryColor = 0.0F;
+				}
+
+				// Submit quad vertices with texture coordinates
+				shapeRenderer.vertexUV((float)gridX, boundaryColor, (float)(gridZ + gridSize), 0.0F, (float)gridSize);
+				shapeRenderer.vertexUV((float)(gridX + gridSize), boundaryColor, (float)(gridZ + gridSize), (float)gridSize, (float)gridSize);
+				shapeRenderer.vertexUV((float)(gridX + gridSize), boundaryColor, (float)gridZ, (float)gridSize, 0.0F);
+				shapeRenderer.vertexUV((float)gridX, boundaryColor, (float)gridZ, 0.0F, 0.0F);
+			}
+		}
+
+		shapeRenderer.end();
+
+		// Render front and back walls (X-Z plane at top and bottom)
+		GL11.glColor3f(0.8F, 0.8F, 0.8F);
+		shapeRenderer.begin();
+
+		for(gridX = 0; gridX < levelRenderer.level.width; gridX += gridSize) {
+			// Front wall (at Z = 0)
+			shapeRenderer.vertexUV((float)gridX, 0.0F, 0.0F, 0.0F, 0.0F);
+			shapeRenderer.vertexUV((float)(gridX + gridSize), 0.0F, 0.0F, (float)gridSize, 0.0F);
+			shapeRenderer.vertexUV((float)(gridX + gridSize), groundLevel, 0.0F, (float)gridSize, groundLevel);
+			shapeRenderer.vertexUV((float)gridX, groundLevel, 0.0F, 0.0F, groundLevel);
+
+			// Back wall (at Z = level.height)
+			shapeRenderer.vertexUV((float)gridX, groundLevel, (float)levelRenderer.level.height, 0.0F, groundLevel);
+			shapeRenderer.vertexUV((float)(gridX + gridSize), groundLevel, (float)levelRenderer.level.height, (float)gridSize, groundLevel);
+			shapeRenderer.vertexUV((float)(gridX + gridSize), 0.0F, (float)levelRenderer.level.height, (float)gridSize, 0.0F);
+			shapeRenderer.vertexUV((float)gridX, 0.0F, (float)levelRenderer.level.height, 0.0F, 0.0F);
+		}
+
+		GL11.glColor3f(0.6F, 0.6F, 0.6F);
+
+		// Render left and right walls (Y-Z plane at X = 0 and X = level.width)
+		for(gridX = 0; gridX < levelRenderer.level.height; gridX += gridSize) {
+			// Left wall (at X = 0)
+			shapeRenderer.vertexUV(0.0F, groundLevel, (float)gridX, 0.0F, 0.0F);
+			shapeRenderer.vertexUV(0.0F, groundLevel, (float)(gridX + gridSize), (float)gridSize, 0.0F);
+			shapeRenderer.vertexUV(0.0F, 0.0F, (float)(gridX + gridSize), (float)gridSize, groundLevel);
+			shapeRenderer.vertexUV(0.0F, 0.0F, (float)gridX, 0.0F, groundLevel);
+
+			// Right wall (at X = level.width)
+			shapeRenderer.vertexUV((float)levelRenderer.level.width, 0.0F, (float)gridX, 0.0F, groundLevel);
+			shapeRenderer.vertexUV((float)levelRenderer.level.width, 0.0F, (float)(gridX + gridSize), (float)gridSize, groundLevel);
+			shapeRenderer.vertexUV((float)levelRenderer.level.width, groundLevel, (float)(gridX + gridSize), (float)gridSize, 0.0F);
+			shapeRenderer.vertexUV((float)levelRenderer.level.width, groundLevel, (float)gridX, 0.0F, 0.0F);
+		}
+
+		shapeRenderer.end();
+		GL11.glEndList();
+
+		// Compile OpenGL display list for water surface
+		GL11.glNewList(this.listId + 1, 4864);
+		levelRenderer = this;
+		GL11.glColor3f(1.0F, 1.0F, 1.0F);
+		float waterLevel = this.level.getWaterLevel();
+		GL11.glBlendFunc(770, 771);
+		shapeRenderer = ShapeRenderer.instance;
+
+		// Calculate water grid size
+		int waterGridSize = 128;
+		if(128 > this.level.width) {
+			waterGridSize = this.level.width;
+		}
+
+		if(waterGridSize > this.level.height) {
+			waterGridSize = this.level.height;
+		}
+
+		// Calculate water grid extension
+		int waterGridExtension = 2048 / waterGridSize;
+		shapeRenderer.begin();
+
+		// Render water surface
+		for(int waterGridX = -waterGridSize * waterGridExtension; waterGridX < levelRenderer.level.width + waterGridSize * waterGridExtension; waterGridX += waterGridSize) {
+			for(int waterGridZ = -waterGridSize * waterGridExtension; waterGridZ < levelRenderer.level.height + waterGridSize * waterGridExtension; waterGridZ += waterGridSize) {
+				// Water surface is slightly below water level
+				float waterSurfaceY = waterLevel - 0.1F;
+
+				// Only render water outside the level boundary or when water is below surface
+				if(waterGridX < 0 || waterGridZ < 0 || waterGridX >= levelRenderer.level.width || waterGridZ >= levelRenderer.level.height) {
+					// Submit water surface quad (two triangles worth of vertices for blending)
+					shapeRenderer.vertexUV((float)waterGridX, waterSurfaceY, (float)(waterGridZ + waterGridSize), 0.0F, (float)waterGridSize);
+					shapeRenderer.vertexUV((float)(waterGridX + waterGridSize), waterSurfaceY, (float)(waterGridZ + waterGridSize), (float)waterGridSize, (float)waterGridSize);
+					shapeRenderer.vertexUV((float)(waterGridX + waterGridSize), waterSurfaceY, (float)waterGridZ, (float)waterGridSize, 0.0F);
+					shapeRenderer.vertexUV((float)waterGridX, waterSurfaceY, (float)waterGridZ, 0.0F, 0.0F);
+
+					// Second set of vertices for backface rendering
+					shapeRenderer.vertexUV((float)waterGridX, waterSurfaceY, (float)waterGridZ, 0.0F, 0.0F);
+					shapeRenderer.vertexUV((float)(waterGridX + waterGridSize), waterSurfaceY, (float)waterGridZ, (float)waterGridSize, 0.0F);
+					shapeRenderer.vertexUV((float)(waterGridX + waterGridSize), waterSurfaceY, (float)(waterGridZ + waterGridSize), (float)waterGridSize, (float)waterGridSize);
+					shapeRenderer.vertexUV((float)waterGridX, waterSurfaceY, (float)(waterGridZ + waterGridSize), 0.0F, (float)waterGridSize);
+				}
+			}
+		}
+
+		shapeRenderer.end();
+		GL11.glDisable(3042);
+		GL11.glEndList();
+
+		// Queue all chunks in the level for loading
+		this.queueChunks(0, 0, 0, this.level.width, this.level.depth, this.level.height);
+	}
+
+	/**
+	 * Sorts chunks by distance from the player and renders visible chunks in proper order.
+	 * Only re-sorts chunks if the player has moved more than 8 blocks from last sort position.
+	 * Uses OpenGL display lists for efficient batch rendering of compiled chunk geometry.
+	 *
+	 * @param player the player whose position determines chunk sorting order
+	 * @param maxChunksPerFrame maximum number of chunks to render per frame (-1 for all)
+	 * @return the number of display list calls issued
+	 */
+	public final int sortChunks(Player player, int maxChunksPerFrame) {
+		// Calculate player movement since last chunk sorting
+		float distanceX = player.x - this.lastLoadX;
+		float distanceY = player.y - this.lastLoadY;
+		float distanceZ = player.z - this.lastLoadZ;
+
+		// Re-sort chunks if player has moved more than 8 blocks (64 units squared)
+		if(distanceX * distanceX + distanceY * distanceY + distanceZ * distanceZ > 64.0F) {
+			// Update last known player position
+			this.lastLoadX = player.x;
+			this.lastLoadY = player.y;
+			this.lastLoadZ = player.z;
+
+			// Sort all chunks by distance from player (closest first for efficient back-to-front rendering)
+			Arrays.sort(this.loadQueue, new ChunkDistanceComparator(player));
+		}
+
+		// Accumulate display list IDs from chunks in sorted order
+		int displayListCount = 0;
+
+		for(int queueIndex = 0; queueIndex < this.loadQueue.length; ++queueIndex) {
+			// Append chunk's display list IDs to cache, respecting max chunks per frame limit
+			displayListCount = this.loadQueue[queueIndex].appendLists(this.chunkDataCache, displayListCount, maxChunksPerFrame);
+		}
+
+		// Transfer display list IDs to OpenGL buffer for rendering
+		this.buffer.clear();
+		this.buffer.put(this.chunkDataCache, 0, displayListCount);
+		this.buffer.flip();
+
+		// Render accumulated chunks if buffer contains data
+		if(this.buffer.remaining() > 0) {
+			// Bind terrain texture for chunk rendering
+			GL11.glBindTexture(3553, this.textureManager.load("/terrain.png"));
+
+			// Execute all accumulated display lists in sequence
+			GL11.glCallLists(this.buffer);
+		}
+
+		// Return number of chunks rendered
+		return this.buffer.remaining();
+	}
+
+	/**
+	 * Queues a rectangular region of chunks for loading and rendering.
+	 * Marks chunks in the specified region as loaded and adds them to the active chunk list.
+	 * Coordinates are in block units and are automatically converted to chunk coordinates.
+	 * Boundary coordinates are clamped to valid chunk grid ranges.
+	 *
+	 * @param minX the minimum X coordinate in blocks
+	 * @param minY the minimum Y coordinate in blocks
+	 * @param minZ the minimum Z coordinate in blocks
+	 * @param maxX the maximum X coordinate in blocks
+	 * @param maxY the maximum Y coordinate in blocks
+	 * @param maxZ the maximum Z coordinate in blocks
+	 */
+	public final void queueChunks(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+		// Convert block coordinates to chunk coordinates (each chunk is 16 blocks)
+		minX /= 16;
+		minY /= 16;
+		minZ /= 16;
+		maxX /= 16;
+		maxY /= 16;
+		maxZ /= 16;
+
+		// Clamp minimum coordinates to valid chunk grid range
+		if(minX < 0) {
+			minX = 0;
+		}
+
+		if(minY < 0) {
+			minY = 0;
+		}
+
+		if(minZ < 0) {
+			minZ = 0;
+		}
+
+		// Clamp maximum coordinates to valid chunk grid range
+		if(maxX > this.xChunks - 1) {
+			maxX = this.xChunks - 1;
+		}
+
+		if(maxY > this.yChunks - 1) {
+			maxY = this.yChunks - 1;
+		}
+
+		if(maxZ > this.zChunks - 1) {
+			maxZ = this.zChunks - 1;
+		}
+
+		// Iterate over all chunks in the specified region
+		for(minX = minX; minX <= maxX; ++minX) {
+			for(int yIndex = minY; yIndex <= maxY; ++yIndex) {
+				for(int zIndex = minZ; zIndex <= maxZ; ++zIndex) {
+					// Calculate 1D array index from 3D chunk coordinates
+					Chunk chunk;
+					if(!(chunk = this.chunkCache[(zIndex * this.yChunks + yIndex) * this.xChunks + minX]).loaded) {
+						// Mark chunk as loaded
+						chunk.loaded = true;
+
+						// Add chunk to active rendering list
+						this.chunks.add(this.chunkCache[(zIndex * this.yChunks + yIndex) * this.xChunks + minX]);
+					}
+				}
+			}
+		}
+	}
 }
