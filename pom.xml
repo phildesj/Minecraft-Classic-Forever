@@ -62,6 +62,29 @@
             <artifactId>jinput</artifactId>
             <version>${jinput.version}</version>
         </dependency>
+
+        <!-- JInput Natives -->
+        <dependency>
+            <groupId>net.java.jinput</groupId>
+            <artifactId>jinput-platform</artifactId>
+            <version>${jinput.version}</version>
+            <classifier>natives-windows</classifier>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.java.jinput</groupId>
+            <artifactId>jinput-platform</artifactId>
+            <version>${jinput.version}</version>
+            <classifier>natives-linux</classifier>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.java.jinput</groupId>
+            <artifactId>jinput-platform</artifactId>
+            <version>${jinput.version}</version>
+            <classifier>natives-osx</classifier>
+            <scope>runtime</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -89,8 +112,8 @@
                             <goal>unpack-dependencies</goal>
                         </goals>
                         <configuration>
-                            <includeGroupIds>org.lwjgl.lwjgl</includeGroupIds>
-                            <includeArtifactIds>lwjgl-platform</includeArtifactIds>
+                            <includeGroupIds>org.lwjgl.lwjgl,net.java.jinput</includeGroupIds>
+                            <includeArtifactIds>lwjgl-platform,jinput-platform</includeArtifactIds>
                             <outputDirectory>${natives.directory}</outputDirectory>
                         </configuration>
                     </execution>
