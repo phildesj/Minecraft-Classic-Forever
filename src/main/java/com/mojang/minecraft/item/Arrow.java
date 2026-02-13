@@ -10,11 +10,50 @@ import com.mojang.util.MathHelper;
 import java.util.List;
 import org.lwjgl.opengl.GL11;
 
-public class Arrow extends Entity
-{
-	public Arrow(Level level1, Entity owner, float x, float y, float z, float unknown0, float unknown1, float unknown2)
-	{
-		super(level1);
+/**
+ * Represents an arrow entity shot by a player or a mob.
+ */
+public class Arrow extends Entity {
+
+	/** Serial version UID for serialization. */
+	private static final long serialVersionUID = 0L;
+
+	private float yRot;
+	private float xRot;
+	private float yRotO;
+	private float xRotO;
+
+	private boolean hasHit = false;
+
+	/** Number of ticks the arrow has been stuck in a block. */
+	private int stickTime = 0;
+
+	/** The entity that shot this arrow. */
+	private final Entity owner;
+
+	/** Total ticks the arrow has existed. */
+	private int time = 0;
+	/** The type of arrow (0 for player-shot, 1 for others). */
+	private int type = 0;
+
+	private float gravity;
+
+	private int damage;
+
+	/**
+	 * Creates a new Arrow entity.
+	 *
+	 * @param level  The level the arrow belongs to.
+	 * @param owner  The entity that shot the arrow.
+	 * @param x      Initial X position.
+	 * @param y      Initial Y position.
+	 * @param z      Initial Z position.
+	 * @param yRot   Initial horizontal rotation.
+	 * @param xRot   Initial vertical rotation.
+	 * @param speed  The initial speed/force of the arrow.
+	 */
+	public Arrow(Level level, Entity owner, float x, float y, float z, float yRot, float xRot, float speed) {
+		super(level);
 
 		this.owner = owner;
 
@@ -23,8 +62,7 @@ public class Arrow extends Entity
 		heightOffset = bbHeight / 2.0F;
 		damage = 3;
 
-		if(!(owner instanceof Player))
-		{
+		if (!(owner instanceof Player)) {
 			type = 1;
 		} else {
 			damage = 7;
@@ -32,39 +70,38 @@ public class Arrow extends Entity
 
 		heightOffset = 0.25F;
 
-		float unknown3 = MathHelper.cos(-unknown0 * 0.017453292F - 3.1415927F);
-		float unknown4 = MathHelper.sin(-unknown0 * 0.017453292F - 3.1415927F);
+		float cosY = MathHelper.cos(-yRot * 0.017453292F - 3.1415927F);
+		float sinY = MathHelper.sin(-yRot * 0.017453292F - 3.1415927F);
 
-		unknown0 = MathHelper.cos(-unknown1 * 0.017453292F);
-		unknown1 = MathHelper.sin(-unknown1 * 0.017453292F);
+		float cosX = MathHelper.cos(-xRot * 0.017453292F);
+		float sinX = MathHelper.sin(-xRot * 0.017453292F);
 
 		slide = false;
 
-		gravity = 1.0F / unknown2;
+		gravity = 1.0F / speed;
 
-		xo -= unknown3 * 0.2F;
-		zo += unknown4 * 0.2F;
+		xo -= cosY * 0.2F;
+		zo += sinY * 0.2F;
 
-		x -= unknown3 * 0.2F;
-		z += unknown4 * 0.2F;
+		this.x -= cosY * 0.2F;
+		this.z += sinY * 0.2F;
 
-		xd = unknown4 * unknown0 * unknown2;
-		yd = unknown1 * unknown2;
-		zd = unknown3 * unknown0 * unknown2;
+		xd = sinY * cosX * speed;
+		yd = sinX * speed;
+		zd = cosY * cosX * speed;
 
-		setPos(x, y, z);
+		setPos(this.x, y, this.z);
 
-		unknown3 = MathHelper.sqrt(xd * xd + zd * zd);
+		float xzDist = MathHelper.sqrt(xd * xd + zd * zd);
 
-		yRotO = yRot = (float)(Math.atan2((double)xd, (double)zd) * 180.0D / 3.1415927410125732D);
-		xRotO = xRot = (float)(Math.atan2((double)yd, (double)unknown3) * 180.0D / 3.1415927410125732D);
+		yRotO = this.yRot = (float) (Math.atan2(xd, zd) * 180.0D / Math.PI);
+		xRotO = this.xRot = (float) (Math.atan2(yd, xzDist) * 180.0D / Math.PI);
 
 		makeStepSound = false;
 	}
 
 	@Override
-	public void tick()
-	{
+	public void tick() {
 		time++;
 
 		xRotO = xRot;
@@ -74,17 +111,16 @@ public class Arrow extends Entity
 		yo = y;
 		zo = z;
 
-		if(hasHit)
-		{
+		if (hasHit) {
 			stickTime++;
 
-			if(type == 0)
-			{
-				if(stickTime >= 300 && Math.random() < 0.009999999776482582D)
-				{
+			if (type == 0) {
+				// Player arrows stay for a while then randomly despawn
+				if (stickTime >= 300 && Math.random() < 0.01D) {
 					remove();
 				}
-			} else if(type == 1 && stickTime >= 20) {
+			} else if (type == 1 && stickTime >= 20) {
+				// Mob arrows despawn quickly
 				remove();
 			}
 		} else {
@@ -94,29 +130,24 @@ public class Arrow extends Entity
 
 			yd -= 0.02F * gravity;
 
-			int unknown0 = (int)(MathHelper.sqrt(xd * xd + yd * yd + zd * zd) / 0.2F + 1.0F);
+			// Sub-step movement for collision accuracy
+			int steps = (int) (MathHelper.sqrt(xd * xd + yd * yd + zd * zd) / 0.2F + 1.0F);
 
-			float x0 = xd / (float)unknown0;
-			float y0 = yd / (float)unknown0;
-			float z0 = zd / (float)unknown0;
+			float stepX = xd / (float) steps;
+			float stepY = yd / (float) steps;
+			float stepZ = zd / (float) steps;
 
-			for(int unknown4 = 0; unknown4 < unknown0 && !collision; unknown4++)
-			{
-				AABB unknown5 = bb.expand(x0, y0, z0);
+			for (int i = 0; i < steps && !collision; i++) {
+				AABB collisionAABB = bb.expand(stepX, stepY, stepZ);
 
-				if(level.getCubes(unknown5).size() > 0)
-				{
+				if (!level.getCubes(collisionAABB).isEmpty()) {
 					collision = true;
 				}
 
-				List blockMapEntitiesList = level.blockMap.getEntities(this, unknown5);
+				List<Entity> blockMapEntitiesList = level.blockMap.getEntities(this, collisionAABB);
 
-				for(int currentEntity = 0; currentEntity < blockMapEntitiesList.size(); currentEntity++)
-				{
-					Entity entity = (Entity)blockMapEntitiesList.get(currentEntity);
-
-					if((entity).isShootable() && (entity != owner || time > 5))
-					{
+				for (Entity entity : blockMapEntitiesList) {
+					if (entity.isShootable() && (entity != owner || time > 5)) {
 						entity.hurt(this, damage);
 
 						collision = true;
@@ -127,48 +158,44 @@ public class Arrow extends Entity
 					}
 				}
 
-				if(!collision)
-				{
-					bb.move(x0, y0, z0);
+				if (!collision) {
+					bb.move(stepX, stepY, stepZ);
 
-					x += x0;
-					y += y0;
-					z += z0;
+					x += stepX;
+					y += stepY;
+					z += stepZ;
 
 					blockMap.moved(this);
 				}
 			}
 
-			if(collision)
-			{
+			if (collision) {
 				hasHit = true;
 
 				xd = yd = zd = 0.0F;
 			}
 
-			if(!hasHit)
-			{
-				float unknown6 = MathHelper.sqrt(xd * xd + zd * zd);
+			if (!hasHit) {
+				float xzDist = MathHelper.sqrt(xd * xd + zd * zd);
 
-				yRot = (float)(Math.atan2((double)xd, (double)zd) * 180.0D / 3.1415927410125732D);
+				yRot = (float) (Math.atan2(xd, zd) * 180.0D / Math.PI);
 
-				for(xRot = (float)(Math.atan2((double)yd, (double)unknown6) * 180.0D / 3.1415927410125732D); xRot - xRotO < -180.0F; xRotO -= 360.0F)
-				{
-					// TODO: ?.
+				xRot = (float) (Math.atan2(yd, xzDist) * 180.0D / Math.PI);
+
+				// Ensure rotation interpolates correctly
+				while (xRot - xRotO < -180.0F) {
+					xRotO -= 360.0F;
 				}
 
-				while(xRot - xRotO >= 180.0F)
-				{
+				while (xRot - xRotO >= 180.0F) {
 					xRotO += 360.0F;
 				}
 
-				while(yRot - yRotO < -180.0F)
-				{
+				while (yRot - yRotO < -180.0F) {
 					yRotO -= 360.0F;
 				}
 
-				while(yRot - yRotO >= 180.0F)
-				{
+				while (yRot - yRotO >= 180.0F) {
 					yRotO += 360.0F;
 				}
 			}
@@ -176,63 +203,62 @@ public class Arrow extends Entity
 	}
 
 	@Override
-	public void render(TextureManager textureManager, float unknown0)
-	{
+	public void render(TextureManager textureManager, float partialTicks) {
 		textureId = textureManager.load("/item/arrows.png");
 
 		GL11.glBindTexture(GL11.GL_TEXTURE_2D, textureId);
 
-		float brightness = level.getBrightness((int)x, (int)y, (int)z);
+		float brightness = level.getBrightness((int) x, (int) y, (int) z);
 
 		GL11.glPushMatrix();
 		GL11.glColor4f(brightness, brightness, brightness, 1.0F);
-		GL11.glTranslatef(xo + (x - xo) * unknown0, this.yo + (this.y - this.yo) * unknown0 - this.heightOffset / 2.0F, this.zo + (this.z - this.zo) * unknown0);
-		GL11.glRotatef(yRotO + (yRot - yRotO) * unknown0 - 90.0F, 0.0F, 1.0F, 0.0F);
-		GL11.glRotatef(xRotO + (xRot - xRotO) * unknown0, 0.0F, 0.0F, 1.0F);
+		GL11.glTranslatef(xo + (x - xo) * partialTicks, this.yo + (this.y - this.yo) * partialTicks - this.heightOffset / 2.0F, this.zo + (this.z - this.zo) * partialTicks);
+		GL11.glRotatef(yRotO + (yRot - yRotO) * partialTicks - 90.0F, 0.0F, 1.0F, 0.0F);
+		GL11.glRotatef(xRotO + (xRot - xRotO) * partialTicks, 0.0F, 0.0F, 1.0F);
 		GL11.glRotatef(45.0F, 1.0F, 0.0F, 0.0F);
 
 		ShapeRenderer shapeRenderer = ShapeRenderer.instance;
 
-		unknown0 = 0.5F;
+		float texSize = 0.5F;
 
-		float unknown1 = (float)(0 + type * 10) / 32.0F;
-		float unknown2 = (float)(5 + type * 10) / 32.0F;
-		float unknown3 = 0.15625F;
+		float v1 = (type * 10) / 32.0F;
+		float v2 = (5 + type * 10) / 32.0F;
+		float u2 = 0.15625F;
 
-		float unknown4 = (float)(5 + type * 10) / 32.0F;
-		float unknown5 = (float)(10 + type * 10) / 32.0F;
-		float unknown6 = 0.05625F;
+		float v3 = (5 + type * 10) / 32.0F;
+		float v4 = (10 + type * 10) / 32.0F;
+		float scale = 0.05625F;
 
-		GL11.glScalef(0.05625F, unknown6, unknown6);
+		GL11.glScalef(scale, scale, scale);
 
-		GL11.glNormal3f(unknown6, 0.0F, 0.0F);
-
-		shapeRenderer.begin();
-		shapeRenderer.vertexUV(-7.0F, -2.0F, -2.0F, 0.0F, unknown4);
-		shapeRenderer.vertexUV(-7.0F, -2.0F, 2.0F, unknown3, unknown4);
-		shapeRenderer.vertexUV(-7.0F, 2.0F, 2.0F, unknown3, unknown5);
-		shapeRenderer.vertexUV(-7.0F, 2.0F, -2.0F, 0.0F, unknown5);
-		shapeRenderer.end();
-
-		GL11.glNormal3f(-unknown6, 0.0F, 0.0F);
+		GL11.glNormal3f(scale, 0.0F, 0.0F);
 
 		shapeRenderer.begin();
-		shapeRenderer.vertexUV(-7.0F, 2.0F, -2.0F, 0.0F, unknown4);
-		shapeRenderer.vertexUV(-7.0F, 2.0F, 2.0F, unknown3, unknown4);
-		shapeRenderer.vertexUV(-7.0F, -2.0F, 2.0F, unknown3, unknown5);
-		shapeRenderer.vertexUV(-7.0F, -2.0F, -2.0F, 0.0F, unknown5);
+		shapeRenderer.vertexUV(-7.0F, -2.0F, -2.0F, 0.0F, v3);
+		shapeRenderer.vertexUV(-7.0F, -2.0F, 2.0F, u2, v3);
+		shapeRenderer.vertexUV(-7.0F, 2.0F, 2.0F, u2, v4);
+		shapeRenderer.vertexUV(-7.0F, 2.0F, -2.0F, 0.0F, v4);
 		shapeRenderer.end();
 
-		for(int unknown7 = 0; unknown7 < 4; unknown7++)
-		{
+		GL11.glNormal3f(-scale, 0.0F, 0.0F);
+
+		shapeRenderer.begin();
+		shapeRenderer.vertexUV(-7.0F, 2.0F, -2.0F, 0.0F, v3);
+		shapeRenderer.vertexUV(-7.0F, 2.0F, 2.0F, u2, v3);
+		shapeRenderer.vertexUV(-7.0F, -2.0F, 2.0F, u2, v4);
+		shapeRenderer.vertexUV(-7.0F, -2.0F, -2.0F, 0.0F, v4);
+		shapeRenderer.end();
+
+		for (int i = 0; i < 4; i++) {
 			GL11.glRotatef(90.0F, 1.0F, 0.0F, 0.0F);
 
-			GL11.glNormal3f(0.0F, -unknown6, 0.0F);
+			GL11.glNormal3f(0.0F, -scale, 0.0F);
 
-			shapeRenderer.vertexUV(-8.0F, -2.0F, 0.0F, 0.0F, unknown1);
-			shapeRenderer.vertexUV(8.0F, -2.0F, 0.0F, unknown0, unknown1);
-			shapeRenderer.vertexUV(8.0F, 2.0F, 0.0F, unknown0, unknown2);
-			shapeRenderer.vertexUV(-8.0F, 2.0F, 0.0F, 0.0F, unknown2);
+			shapeRenderer.begin();
+			shapeRenderer.vertexUV(-8.0F, -2.0F, 0.0F, 0.0F, v1);
+			shapeRenderer.vertexUV(8.0F, -2.0F, 0.0F, texSize, v1);
+			shapeRenderer.vertexUV(8.0F, 2.0F, 0.0F, texSize, v2);
+			shapeRenderer.vertexUV(-8.0F, 2.0F, 0.0F, 0.0F, v2);
 			shapeRenderer.end();
 		}
 
@@ -241,12 +267,14 @@ public class Arrow extends Entity
 	}
 
 	@Override
-	public void playerTouch(Entity entity)
-	{
-		Player player = (Player)entity;
+	public void playerTouch(Entity entity) {
+		if (!(entity instanceof Player)) {
+			return;
+		}
 
-		if(hasHit && owner == player && player.arrows < 99)
-		{
+		Player player = (Player) entity;
+
+		if (hasHit && owner == player && player.arrows < 99) {
 			TakeEntityAnim takeEntityAnim = new TakeEntityAnim(level, this, player);
 
 			level.addEntity(takeEntityAnim);
@@ -258,37 +286,16 @@ public class Arrow extends Entity
 	}
 
 	@Override
-	public void awardKillScore(Entity entity, int score)
-	{
+	public void awardKillScore(Entity entity, int score) {
 		owner.awardKillScore(entity, score);
 	}
 
-	public static final long serialVersionUID = 0L;
-
-	private float xd;
-	private float yd;
-	private float zd;
-
-	private float yRot;
-	private float xRot;
-	private float yRotO;
-	private float xRotO;
-
-	private boolean hasHit = false;
-
-	private int stickTime = 0;
-
-	private Entity owner;
-
-	private int time = 0;
-	private int type = 0;
-
-	private float gravity = 0.0F;
-
-	private int damage;
-
-	public Entity getOwner()
-	{
+	/**
+	 * Gets the entity that shot this arrow.
+	 *
+	 * @return The owner entity.
+	 */
+	public Entity getOwner() {
 		return owner;
 	}
 }
