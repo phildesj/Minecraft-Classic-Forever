@@ -1,26 +1,37 @@
 package com.mojang.minecraft.gui;
 
-import com.mojang.minecraft.gui.GuiScreen;
-
+/**
+ * A screen used to display an error message to the user.
+ */
 public final class ErrorScreen extends GuiScreen {
 
-   private String title;
-   private String text;
+	/** The title of the error. */
+	private final String title;
+	/** The description text of the error. */
+	private final String text;
 
+	/**
+	 * Creates a new error screen.
+	 *
+	 * @param title The title of the error.
+	 * @param text  The description of the error.
+	 */
+	public ErrorScreen(String title, String text) {
+		this.title = title;
+		this.text = text;
+	}
 
-   public ErrorScreen(String var1, String var2) {
-      this.title = var1;
-      this.text = var2;
-   }
+	@Override
+	public void render(int mouseX, int mouseY) {
+		drawFadingBox(0, 0, this.width, this.height, -12574688, -11530224);
+		drawCenteredString(this.fontRenderer, this.title, this.width / 2, 90, 16777215);
+		drawCenteredString(this.fontRenderer, this.text, this.width / 2, 110, 16777215);
+		super.render(mouseX, mouseY);
+	}
 
-   public final void onOpen() {}
-
-   public final void render(int var1, int var2) {
-      drawFadingBox(0, 0, this.width, this.height, -12574688, -11530224);
-      drawCenteredString(this.fontRenderer, this.title, this.width / 2, 90, 16777215);
-      drawCenteredString(this.fontRenderer, this.text, this.width / 2, 110, 16777215);
-      super.render(var1, var2);
-   }
-
-   protected final void onKeyPress(char var1, int var2) {}
+	@Override
+	protected void onKeyPress(char typedChar, int keyCode) {}
 }
+
+
+
